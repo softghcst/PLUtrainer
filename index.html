@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PLU Trainer</title>
+<style>
+:root{--bg:#0b0f19;--fg:#e9eef9;--card:#0f1422;--muted:#9fb0d1;--accent:#c5162e}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+header{position:sticky;top:0;z-index:9;display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid #202737;background:var(--card)}
+h1{font-size:1.1rem;margin:0} .muted{color:var(--muted)} .small{font-size:.9rem}
+main{display:grid;grid-template-columns:1fr;gap:10px;padding:10px}
+.card{background:#0e1320;border:1px solid #1e2636;border-radius:14px;padding:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{background:#111927;border:1px solid #273145;color:#e4ecfa;border-radius:10px;padding:8px 10px;cursor:pointer}
+.btn.green{background:#0f3120;border-color:#1e7448}
+.pill{display:inline-flex;gap:6px;align-items:center;border:1px solid #26314a;background:#0e121c;padding:6px 10px;border-radius:999px}
+input,select{background:#0e1320;border:1px solid #26314a;color:#fff;border-radius:8px;padding:8px}
+code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;border:1px solid #26314a;border-radius:6px;padding:2px 6px}
+.table{width:100%;border-collapse:collapse} .table th,.table td{border-bottom:1px solid #22304a;padding:6px 8px;text-align:left}
+.ok{color:#3bd17f} .bad{color:#ff6b6b}
+.imgbox{width:120px;height:120px;background:#0d1220;border:1px solid #22304a;border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.imgbox img{max-width:100%;max-height:100%;display:block}
+/* Bottom Tabs + Panels */
+.tabs{position:sticky;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid #202737;display:flex;gap:6px;padding:6px;justify-content:space-around;z-index:10}
+.tabbtn{flex:1;text-align:center;padding:8px;border-radius:8px;border:1px solid #2a3345;background:#111522;color:#cfd6e6;font-size:.8rem}
+.tabbtn.active{background:var(--accent);border-color:#ab001f;color:white}
+.panel{display:none}
+.panel.active{display:block}
+.list{max-height:60vh;overflow:auto;border:1px solid #22304a;border-radius:10px}
+.list .rowline{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #22304a}
+.chip{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;border:1px solid #2a3345;background:#0e121c;font-size:.8rem;color:#cfd6e6}
+.star{cursor:pointer;font-size:1.1rem}
+.bigpad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.bigkey{padding:20px;border-radius:14px;text-align:center;background:#121723;border:1px solid #2a3345;font-size:1.6rem;font-weight:900}
+.bigkey.big{grid-column:span 3}
+/* Light theme */
+.light{--bg:#f7f8fb;--fg:#0b0f19;--card:#ffffff;--muted:#44516b}
+</style>
+</head>
+<body>
+<header>
+  <h1>PLU Trainer</h1>
+  <div class="row" style="margin-left:auto">
+    <button class="btn" id="themeToggle">🌙/☀️</button>
+    <button class="btn" id="settingsBtn">⚙️</button>
+  </div>
+</header>
+<main>
+  <section class="right">
+    <!-- Panels -->
+    <div id="panelLearn" class="panel active">
+      <div class="card">
+        <h2>Learn — Guided</h2>
+        <div class="row">
+          <div class="imgbox"><img id="learnImg" style="display:none"><span class="muted small" id="learnNoImg">No picture</span></div>
+          <div style="flex:1">
+            <div><b id="learnName">—</b> <span class="muted">(<span id="learnCat">—</span>)</span></div>
+            <div class="small muted" id="learnNotes"></div>
+            <div class="row" style="margin-top:8px">
+              <button class="btn" id="learnPrev">◀ Prev</button>
+              <button class="btn" id="learnNext">Next ▶</button>
+              <button class="btn" id="learnShow">Show Code</button>
+              <span class="pill code" id="learnCode" style="display:none"></span>
+              <button class="btn" id="learnPic">Add Picture</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panelQuiz" class="panel">
+      <div class="card">
+        <h2>Quiz — Register</h2>
+        <div class="row" style="margin:6px 0">
+          <div class="chip">Current: <b id="qName">—</b> <span class="muted">(<span id="qCat">—</span>)</span></div>
+          <div class="chip">Target length: <b id="qLen">—</b></div>
+        </div>
+        <div class="row">
+          <input id="qInput" inputmode="numeric" placeholder="Enter PLU…" maxlength="5">
+          <button class="btn" id="qSubmit">Enter</button>
+          <button class="btn" id="qNext">Next ▶</button>
+        </div>
+        <div id="qFeedback" class="small" style="margin-top:6px"></div>
+      </div>
+    </div>
+
+    <div id="panelCheckout" class="panel">
+      <div class="card">
+        <h2>Checkout Game — Simulated Register</h2>
+        <div class="row">
+          <button class="btn green" id="cgStart">Start</button>
+          <select id="cgPreset">
+            <option value="rookie">Rookie</option>
+            <option value="cashier" selected>Cashier</option>
+            <option value="speed">Speed</option>
+            <option value="expert">Expert</option>
+          </select>
+          <select id="cgTimer">
+            <option value="0">Timer Off</option><option value="30">30s</option><option value="20">20s</option><option value="10">10s</option><option value="5">5s</option>
+          </select>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <div class="chip">Customer <b id="cgCust">0</b>/<b id="cgCustTotal">0</b></div>
+          <div class="chip">Item <b id="cgIdx">0</b>/<b id="cgCount">0</b></div>
+          <div class="chip">Time <b id="cgTime">—</b></div>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <div class="imgbox"><img id="cgImg" style="display:none"><span class="muted small" id="cgNoImg">No picture</span></div>
+          <div style="flex:1">
+            <div><b id="cgName">—</b> <span class="muted">(<span id="cgCat">—</span>)</span></div>
+            <div class="row" style="margin-top:6px">
+              <input id="cgInput" inputmode="numeric" placeholder="Enter PLU…" maxlength="5">
+              <button class="btn" id="cgEnter">Enter</button>
+            </div>
+            <div id="cgFeedback" class="small" style="margin-top:6px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panelSearch" class="panel">
+      <div class="card">
+        <h2>Search — All Items</h2>
+        <div class="row">
+          <input id="srchInput" type="text" placeholder="Search by name or PLU…">
+          <select id="srchCat"><option value="">All categories</option></select>
+        </div>
+        <div class="list" id="srchList"></div>
+      </div>
+    </div>
+
+    <div id="panelFavorites" class="panel">
+      <div class="card">
+        <h2>Favorites — Trouble Items</h2>
+        <div class="list" id="favList"></div>
+      </div>
+    </div>
+
+    <div id="panelFlashcards" class="panel">
+      <div class="card">
+        <h2>Flashcards — Free Study</h2>
+        <div class="itembox" style="padding:10px">
+          <div class="imgbox"><img id="fcImg" style="display:none"><span class="muted small" id="fcImgHint">No picture</span></div>
+          <div style="flex:1">
+            <div><b id="fcName"></b> <span class="muted">(<span id="fcCat"></span>)</span></div>
+            <div class="small muted" id="fcNotes"></div>
+            <div class="row" style="margin-top:8px">
+              <button class="btn" id="fcPrev">◀ Prev</button>
+              <button class="btn" id="fcFlip">Flip</button>
+              <button class="btn" id="fcNext">Next ▶</button>
+              <span class="pill code" id="fcCode" style="display:none"></span>
+              <button class="btn" id="fcStar">☆ Favorite</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panelKeypad" class="panel">
+      <div class="card">
+        <h2>Big Keypad — Quick Entry</h2>
+        <div class="row" style="margin:8px 0">
+          <div class="chip">Current: <b id="bkName">—</b> <span class="muted">(<span id="bkCat"></span>)</span></div>
+          <div class="chip">PLU Length: <b id="bkLen">—</b></div>
+        </div>
+        <div class="bigpad" id="bkPad">
+          <div class="bigkey">1</div><div class="bigkey">2</div><div class="bigkey">3</div>
+          <div class="bigkey">4</div><div class="bigkey">5</div><div class="bigkey">6</div>
+          <div class="bigkey">7</div><div class="bigkey">8</div><div class="bigkey">9</div>
+          <div class="bigkey">0</div>
+          <div class="bigkey big" id="bkEnter">Enter</div>
+          <div class="bigkey big" id="bkClear">Clear</div>
+        </div>
+        <div class="status" id="bkFeedback"></div>
+      </div>
+    </div>
+
+    <div id="panelStats" class="panel">
+      <div class="card">
+        <h2>Stats — Progress</h2>
+        <div class="row">
+          <div class="pill">Today Correct: <b id="stTodayOk">0</b></div>
+          <div class="pill">Today Mistakes: <b id="stTodayBad">0</b></div>
+          <div class="pill">Accuracy: <b id="stAcc">0%</b></div>
+        </div>
+        <div class="list" id="stMisses"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;z-index:9999">
+  <div class="card" style="width:min(560px,calc(100% - 24px));padding:16px">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2 style="margin:0">Settings</h2>
+      <button class="btn" id="settingsClose">✖</button>
+    </div>
+    <div class="section" style="margin-top:8px">
+      <div class="row">
+        <label class="pill"><input type="checkbox" id="setSounds" checked> Sounds</label>
+        <label class="pill"><input type="checkbox" id="setHaptics" checked> Haptics</label>
+        <label class="pill"><input type="checkbox" id="setStrict"> Strict 4/5</label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="pill">Default Timer (Quiz): 
+          <select id="setQuizTimer">
+            <option value="0">Off</option><option value="30">30s</option><option value="20" selected>20s</option><option value="10">10s</option><option value="5">5s</option>
+          </select>
+        </div>
+        <div class="pill">Default Timer (Checkout per item): 
+          <select id="setCgTimer">
+            <option value="0">Off</option><option value="30">30s</option><option value="20" selected>20s</option><option value="10">10s</option><option value="5">5s</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn green" id="settingsSave">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden 'recent' table (placeholder for Stats) -->
+<table id="recent" class="table" style="display:none"><tbody></tbody></table>
+
+<div class="tabs" id="tabbar">
+  <button class="tabbtn active" data-tab="Learn">Learn</button>
+  <button class="tabbtn" data-tab="Quiz">Quiz</button>
+  <button class="tabbtn" data-tab="Checkout">Checkout</button>
+  <button class="tabbtn" data-tab="Search">Search</button>
+  <button class="tabbtn" data-tab="Favorites">Favorites</button>
+  <button class="tabbtn" data-tab="Flashcards">Flashcards</button>
+  <button class="tabbtn" data-tab="Keypad">Keypad</button>
+  <button class="tabbtn" data-tab="Stats">Stats</button>
+  <button class="tabbtn" data-tab="Settings">Settings</button>
+</div>
+
+<script>
+const $ = s=>document.querySelector(s);
+const store={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d;}catch(e){return d;}},save:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+function toast(m){console.log(m);}
+
+// Theme
+$('#themeToggle').onclick=()=>{ document.body.classList.toggle('light'); store.save('plu:light', document.body.classList.contains('light')); };
+(()=>{ if(store.get('plu:light',false)) document.body.classList.add('light'); })();
+
+// Data boot
+let DATA=store.get("plu:data:v4",[]);
+function computeCategories(){ const s=new Set(); (DATA||[]).forEach(d=>s.add(d.category||"Other")); return [...s].sort(); }
+function saveData(){ store.save("plu:data:v4", DATA); }
+
+// Settings
+const SETTINGS_KEY='plu:settings'; const DEF_SETTINGS={sounds:true,haptics:true,strict:false,quizTimer:20,cgTimer:20};
+let SETTINGS=Object.assign({},DEF_SETTINGS,store.get(SETTINGS_KEY,{}));
+function openSettings(){ $('#settingsModal').style.display='flex'; applySettings(); }
+function closeSettings(){ $('#settingsModal').style.display='none'; }
+$('#settingsBtn').onclick=openSettings; $('#settingsClose').onclick=closeSettings;
+function applySettings(){ $('#setSounds').checked=!!SETTINGS.sounds; $('#setHaptics').checked=!!SETTINGS.haptics; $('#setStrict').checked=!!SETTINGS.strict; $('#setQuizTimer').value=String(SETTINGS.quizTimer||0); $('#setCgTimer').value=String(SETTINGS.cgTimer||0); }
+$('#settingsSave').onclick=()=>{ SETTINGS={sounds:$('#setSounds').checked,haptics:$('#setHaptics').checked,strict:$('#setStrict').checked,quizTimer:parseInt($('#setQuizTimer').value||'0',10),cgTimer:parseInt($('#setCgTimer').value||'0',10)}; store.save(SETTINGS_KEY,SETTINGS); toast('Settings saved'); closeSettings(); };
+
+// Tabs
+function activateTab(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const pnl=document.getElementById('panel'+name); if(pnl)pnl.classList.add('active');
+  document.querySelectorAll('.tabbtn').forEach(b=>{ if(b.dataset.tab===name) b.classList.add('active'); else b.classList.remove('active'); });
+  store.save('plu:lastTab', name);
+}
+document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
+  const n=b.dataset.tab; if(n==='Settings') return openSettings(); activateTab(n);
+  if(n==='Search') renderSearch();
+  if(n==='Favorites') renderFavorites();
+  if(n==='Flashcards') fcSet(FC_IDX);
+  if(n==='Keypad') bkUpdate();
+  if(n==='Stats') renderStats();
+}));
+
+// Learn
+let L_IDX=0;
+function learnShow(i){
+  if(!DATA.length) return;
+  L_IDX=( (i%DATA.length)+DATA.length )%DATA.length;
+  const it=DATA[L_IDX];
+  $('#learnName').textContent=it.name; $('#learnCat').textContent=it.category||'Other'; $('#learnNotes').textContent=it.notes||'';
+  const img=$('#learnImg'), hint=$('#learnNoImg');
+  if(it.image){ img.src=it.image; img.style.display='block'; hint.style.display='none'; } else { img.style.display='none'; hint.style.display='block'; }
+  $('#learnCode').style.display='none'; $('#learnCode').textContent=it.code;
+}
+$('#learnPrev').onclick=()=>learnShow(L_IDX-1);
+$('#learnNext').onclick=()=>learnShow(L_IDX+1);
+$('#learnShow').onclick=()=>{ const el=$('#learnCode'); el.style.display=(el.style.display==='none'?'inline-flex':'none'); };
+$('#learnPic').onclick=()=>{
+  const input=document.createElement('input'); input.type='file'; input.accept='image/*';
+  input.onchange=()=>{ const f=input.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>{ DATA[L_IDX].image=e.target.result; saveData(); learnShow(L_IDX); renderSearch(); renderFavorites(); }; r.readAsDataURL(f); };
+  input.click();
+};
+
+// Quiz
+let Q_IDX=0, CURRENT=null, today={ok:0,bad:0};
+function nextItem(){ if(!DATA.length) return; Q_IDX=(Q_IDX+1)%DATA.length; CURRENT=DATA[Q_IDX]; $('#qName').textContent=CURRENT.name; $('#qCat').textContent=CURRENT.category||'Other'; $('#qLen').textContent=CURRENT.code.length; $('#qInput').value=''; $('#qFeedback').textContent=''; }
+$('#qSubmit').onclick=()=>{ const v=$('#qInput').value.trim(); const ok=(v===CURRENT.code); $('#qFeedback').innerHTML= ok?'<span class="ok">Correct!</span>':'<span class="bad">Wrong.</span> Correct: <span class="code">'+CURRENT.code+'</span>'; (ok?today.ok++:today.bad++); };
+$('#qNext').onclick=nextItem;
+
+// Checkout (mini)
+let CG={customers:[],custIdx:0};
+function startCG(){
+  CG.customers = Array.from({length:3},()=>{ const n=3+Math.floor(Math.random()*3); return Array.from({length:n},()=> DATA[Math.floor(Math.random()*DATA.length)]); });
+  CG.custIdx=0; $('#cgCustTotal').textContent=String(CG.customers.length); nextCGCustomer();
+}
+function nextCGCustomer(){
+  const items=CG.customers[CG.custIdx]||[];
+  $('#cgCust').textContent=String(CG.custIdx+1); $('#cgCount').textContent=String(items.length); $('#cgIdx').textContent='0';
+  nextCGItem();
+}
+function nextCGItem(){
+  const items=CG.customers[CG.custIdx]||[]; const idx=parseInt($('#cgIdx').textContent,10);
+  if(idx>=items.length){ CG.custIdx++; if(CG.custIdx<CG.customers.length){ return nextCGCustomer(); } else { return toast('Session done'); } }
+  const it=items[idx];
+  $('#cgName').textContent=it.name; $('#cgCat').textContent=it.category||'Other';
+  const img=$('#cgImg'), hint=$('#cgNoImg'); if(it.image){ img.src=it.image; img.style.display='block'; hint.style.display='none'; } else { img.style.display='none'; hint.style.display='block'; }
+  $('#cgInput').value=''; $('#cgFeedback').textContent='';
+}
+function okCGItem(){ const idx=parseInt($('#cgIdx').textContent,10)+1; $('#cgIdx').textContent=String(idx); nextCGItem(); }
+function missCGItem(){ $('#cgFeedback').innerHTML='<span class="bad">Wrong.</span>'; }
+$('#cgStart').onclick=startCG; $('#cgEnter').onclick=()=>{ const v=$('#cgInput').value.trim(); const items=CG.customers[CG.custIdx]||[]; const idx=parseInt($('#cgIdx').textContent,10); const it=items[idx]; if(!it) return; if(v===it.code) okCGItem(); else missCGItem(); };
+
+// Search + Favorites
+const FAV_KEY='plu:favorites';
+function favSet(){ return new Set(store.get(FAV_KEY, [])); }
+function saveFav(s){ store.save(FAV_KEY, Array.from(s)); }
+function isFav(code){ return favSet().has(code); }
+function toggleFav(code){ const s=favSet(); if(s.has(code)) s.delete(code); else s.add(code); saveFav(s); renderSearch(); renderFavorites(); }
+function renderSearch(){
+  const list=$('#srchList'); if(!list) return;
+  const q=($('#srchInput').value||'').trim().toLowerCase();
+  const cat=($('#srchCat').value||'').trim();
+  const items=DATA.filter(d=> (!cat||d.category===cat) && (d.name.toLowerCase().includes(q) || d.code.includes(q)) );
+  list.innerHTML = items.map(it=>`<div class="rowline">
+    <div><b>${it.name}</b> <span class="chip">${it.category||'Other'}</span> <span class="chip code">${it.code}</span></div>
+    <div><span class="star" data-code="${it.code}">${isFav(it.code)?'★':'☆'}</span></div>
+  </div>`).join('');
+  list.querySelectorAll('.star').forEach(s=> s.onclick=()=>toggleFav(s.getAttribute('data-code')));
+}
+document.addEventListener('input', (e)=>{ if(e.target && (e.target.id==='srchInput' || e.target.id==='srchCat')) renderSearch(); });
+function renderFavorites(){
+  const wrap=$('#favList'); if(!wrap) return;
+  const s=favSet(); const items=DATA.filter(d=> s.has(d.code));
+  if(items.length===0){ wrap.innerHTML='<div class="rowline"><span class="muted">No favorites yet. Star items from Search or Flashcards.</span></div>'; return; }
+  wrap.innerHTML = items.map(it=>`<div class="rowline">
+    <div><b>${it.name}</b> <span class="chip">${it.category||'Other'}</span> <span class="chip code">${it.code}</span></div>
+    <div><button class="btn" data-go="${it.code}">Practice</button> <span class="star" data-code="${it.code}">★</span></div>
+  </div>`).join('');
+  wrap.querySelectorAll('span.star').forEach(s=> s.onclick=()=>toggleFav(s.getAttribute('data-code')));
+  wrap.querySelectorAll('button[data-go]').forEach(b=> b.onclick=()=>{ const it=DATA.find(x=>x.code===b.getAttribute('data-go')); if(it){ CURRENT=it; activateTab('Quiz'); nextItem(); } });
+}
+
+// Flashcards
+let FC_IDX=0;
+function fcSet(i){
+  if(!DATA.length) return;
+  FC_IDX=( (i%DATA.length)+DATA.length )%DATA.length;
+  const it=DATA[FC_IDX];
+  $('#fcName').textContent=it.name; $('#fcCat').textContent=it.category||'Other'; $('#fcNotes').textContent=it.notes||'';
+  const img=$('#fcImg'), hint=$('#fcImgHint');
+  if(it.image){ img.src=it.image; img.style.display='block'; hint.style.display='none'; } else { img.style.display='none'; hint.style.display='block'; }
+  $('#fcCode').style.display='none'; $('#fcCode').textContent=it.code;
+  $('#fcStar').textContent = isFav(it.code)?'★ Favorited':'☆ Favorite';
+}
+$('#fcPrev').onclick=()=>fcSet(FC_IDX-1);
+$('#fcNext').onclick=()=>fcSet(FC_IDX+1);
+$('#fcFlip').onclick=()=>{ const el=$('#fcCode'); el.style.display=(el.style.display==='none'?'inline-flex':'none'); };
+$('#fcStar').onclick=()=>{ const it=DATA[FC_IDX]; toggleFav(it.code); fcSet(FC_IDX); };
+
+// Big Keypad
+function bkUpdate(){
+  const it=CURRENT || (DATA[0]||null);
+  $('#bkName').textContent=it?it.name:'—';
+  $('#bkCat').textContent=it?it.category||'Other':'—';
+  $('#bkLen').textContent=it?it.code.length:'—';
+  $('#bkFeedback').innerHTML=''; BK_ENTRY='';
+}
+let BK_ENTRY='';
+document.querySelectorAll('#bkPad .bigkey').forEach(k=>{ const v=k.textContent.trim(); if(/^\d$/.test(v)) k.onclick=()=>{ BK_ENTRY+=v; }; });
+$('#bkEnter').onclick=()=>{ const it=CURRENT||DATA[0]; if(!it) return; const ok=(BK_ENTRY===it.code); $('#bkFeedback').innerHTML = ok? '<span class="ok">Correct!</span>':'<span class="bad">Wrong.</span> Correct: <span class="code">'+it.code+'</span>'; BK_ENTRY=''; };
+$('#bkClear').onclick=()=>{ BK_ENTRY=''; $('#bkFeedback').innerHTML=''; };
+
+// Stats
+function renderStats(){
+  const ok=today.ok, bad=today.bad, total=ok+bad;
+  $('#stTodayOk').textContent=String(ok);
+  $('#stTodayBad').textContent=String(bad);
+  $('#stAcc').textContent = total? ((ok/total*100).toFixed(1)+'%'):'0%';
+  const missWrap=$('#stMisses'); if(missWrap){ missWrap.innerHTML='<div class="rowline"><span class="muted">Recent misses will show after some quizzes.</span></div>'; }
+}
+
+// Boot
+(async function boot(){
+  // If you already imported your MASTER earlier, it loads from localStorage now.
+  // Otherwise, go to Settings (or existing Import flow) to load your JSON.
+  const sel=$('#srchCat'); if(sel){ const cats=computeCategories(); sel.innerHTML='<option value=\"\">All categories</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join(''); }
+  if(DATA.length){ L_IDX=0; learnShow(0); Q_IDX=-1; nextItem(); fcSet(0); }
+  const last=store.get('plu:lastTab','Learn'); activateTab(last);
+  renderSearch(); renderFavorites(); bkUpdate(); renderStats();
+})();
+</script>
+</body>
+</html>
