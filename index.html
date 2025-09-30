@@ -134,16 +134,29 @@ code,.code{
 
 .star{cursor:pointer;font-size:1.1rem}
 .bigpad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.bigkey{padding:20px;border-radius:14px;text-align:center;background:#121723;border:1px solid #2a3345;font-size:1.6rem;font-weight:900}
+.bigkey{
+  padding:20px;
+  border-radius:14px;
+  text-align:center;
+  background: var(--surface);
+  border:1px solid var(--border);
+  font-size:1.6rem;
+  font-weight:900;
+}
 .bigkey.big{grid-column:span 3}
 
 /* Checkout visuals */
 .checkout-area{
   display:flex; align-items:center; gap:12px;
   padding:10px; border:1px solid var(--border); border-radius:12px;
-  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.05));
+  background: var(--card);
 }
-
+.checkout-area{ position: relative; }
+.checkout-area::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.03));
+  border-radius:12px;
+}
 /* Avatar (supports .avatar) */
 .avatar, .customerAvatar{
   width:72px; height:72px; min-width:72px; /* ✅ prevents flex shrink */
@@ -702,8 +715,7 @@ function toggleTheme() {
   try { localStorage.setItem('THEME', light ? 'light' : 'dark'); } catch(e){}
 }
 
-// Bind both theme buttons (header + settings panel)
-document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+// Bind theme button (header + settings panel)
 document.getElementById('toggleTheme')?.addEventListener('click', toggleTheme);
 
 // Settings button behavior (open/close the panel)
@@ -1331,44 +1343,6 @@ if (!localStorage.getItem('ONBOARDED')) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
   }
-</script>
-    <!-- Settings + Theme wiring -->
-<script>
-  const settingsBtn   = document.getElementById('settingsBtn');
-  const settingsPanel = document.getElementById('settingsPanel');
-
-  // Open/close the settings card
-  settingsBtn?.addEventListener('click', () => {
-    const visible = settingsPanel && settingsPanel.style.display === 'block';
-    if (settingsPanel) settingsPanel.style.display = visible ? 'none' : 'block';
-  });
-
-  // Close button inside the settings card
-  document.getElementById('closeSettings')?.addEventListener('click', () => {
-    if (settingsPanel) settingsPanel.style.display = 'none';
-  });
-
-  // Toggle theme from the settings card
-  document.getElementById('toggleTheme')?.addEventListener('click', () => {
-    document.body.classList.toggle('light');
-    try {
-      localStorage.setItem(
-        'THEME',
-        document.body.classList.contains('light') ? 'light' : 'dark'
-      );
-    } catch (e) {}
-  });
-
-  // Also wire the small header button if you want it to flip theme directly
-  document.getElementById('themeToggle')?.addEventListener('click', () => {
-    document.body.classList.toggle('light');
-    try {
-      localStorage.setItem(
-        'THEME',
-        document.body.classList.contains('light') ? 'light' : 'dark'
-      );
-    } catch (e) {}
-  });
 </script>
 </body>
 </html>
