@@ -451,7 +451,7 @@ let DATA = store.get('DATA_BAKED', null);
 if(!DATA){
   const raw = $("#seed").textContent.trim();
   DATA = JSON.parse(raw);
-  // Normalize names to Title Case for display/search only
+  // Normalize names/categories for display/search
   DATA = DATA.map(x=>({
     ...x,
     name: toTitle(String(x.name || "")),
@@ -461,13 +461,13 @@ if(!DATA){
     image: x.image || ""
   }));
   store.save('DATA_BAKED', DATA);
+}
 
-  // --- Item count helper
+// --- Item count helper (MUST exist whether DATA came from localStorage or seed)
 const TOTAL_ITEMS = DATA.length;
 function updateItemCount(filteredCount = TOTAL_ITEMS){
   const c = document.getElementById('itemCount');
   if (c) c.textContent = `(${filteredCount}/${TOTAL_ITEMS})`;
-}
 }
 
 // Favorites & performance
@@ -515,12 +515,16 @@ $("#learnPic").onclick = ()=>{
 showLearn();
 
 // --------------- Quiz ----------------
-let q = {i:0, order:shuffle([...DATA])};
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a }
+let q = {i:0, order:shuffle([...DATA])};
+
 function showQuiz(){
   const it = q.order[q.i % q.order.length];
-  $("#qName").textContent = it.name; $("#qCat").textContent = it.category; $("#qLen").textContent = it.code.length;
-  $("#qInput").value=""; $("#qFeedback").textContent="";
+  $("#qName").textContent = it.name;
+  $("#qCat").textContent = it.category;
+  $("#qLen").textContent = it.code.length;
+  $("#qInput").value="";
+  $("#qFeedback").textContent="";
 }
 function submitQuiz(){
   const it = q.order[q.i % q.order.length];
@@ -570,9 +574,7 @@ function startTimer(sec, targetSel){
   const target = $(targetSel); const start = Date.now(); const id = setInterval(()=>{
     const left = Math.max(0, sec - Math.floor((Date.now()-start)/1000));
     target.textContent = `⏱ ${left}s`;
-    if(left<=0){ clearInterval(id); // auto fail + advance
-      target.textContent = "⏱ 0s — time!"; CG.streak=0; nextWrong();
-    }
+    if(left<=0){ clearInterval(id); target.textContent = "⏱ 0s — time!"; CG.streak=0; nextWrong(); }
   }, 200);
 }
 function enterCG(){
@@ -608,7 +610,7 @@ function renderBrowse(){
     return hit && catOk && favOk;
   });
 
-  updateItemCount(results.length); // if you added the counter
+  updateItemCount(results.length);
 
   results.forEach(it => {
     const row = document.createElement('div'); row.className='rowline';
@@ -630,35 +632,6 @@ function renderBrowse(){
     saveFav(); renderBrowse();
   });
 }
-
-  // Update counter (filtered/total)
-  updateItemCount(results.length);
-
-  // Render results
-  results.forEach(it=>{
-    const row = document.createElement('div'); 
-    row.className = 'rowline';
-    row.innerHTML = `
-      <div style="display:flex;gap:10px;align-items:center">
-        <span class="star" data-code="${it.code}">${FAV.has(it.code) ? '⭐':'☆'}</span>
-        <div>
-          <div><b>${it.name}</b> <span class="muted small">(${it.category})</span></div>
-          <div class="small muted">${it.code}${it.notes? ' — '+it.notes:''}</div>
-        </div>
-      </div>
-      <div class="imgbox">${it.image ? `<img src="${it.image}">` : `<span class="muted small">No picture</span>`}</div>
-    `;
-    list.appendChild(row);
-  });
-
-  // Star toggle for favorites
-  $$('.star').forEach(s => s.onclick = ()=>{
-    const c = s.dataset.code;
-    if(FAV.has(c)) FAV.delete(c); else FAV.add(c);
-    saveFav();
-    renderBrowse(); // re-render & refresh counter
-  });
-}
 function buildCatFilter(){
   const cats = Array.from(new Set(DATA.map(d=>d.category))).sort();
   $("#catFilter").innerHTML = `<option value="">All Categories</option>` + cats.map(c=>`<option>${c}</option>`).join('');
@@ -666,9 +639,9 @@ function buildCatFilter(){
 $("#searchBox").oninput = renderBrowse;
 $("#catFilter").onchange = renderBrowse;
 $("#favOnly").onchange = renderBrowse;
-buildCatFilter(); 
+buildCatFilter();
 renderBrowse();
-updateItemCount(); // initial (e.g. 170/170)
+updateItemCount(); // initial (e.g. 168/168)
 
 // --------------- Big Keypad ----------------
 $$('.bigkey').forEach(k=>{
@@ -695,6 +668,13 @@ function renderStats(){
     </div>`;
 }
 renderStats();
+
+// --- First-time onboarding tip
+if (!localStorage.getItem('ONBOARDED')) {
+  alert('Tip: Use Browse to ⭐ favorite tricky items, then practice in Quiz or Checkout. You can paste an image URL to add pictures.');
+  localStorage.setItem('ONBOARDED','1');
+}
+</script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
