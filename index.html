@@ -9,12 +9,120 @@
 <meta name="theme-color" content="#E6002D">
 <meta name="apple-mobile-web-app-title" content="H-Mart PLU Trainer">
 <style>
-:root{
-  --bg:#0b0f19;
-  --fg:#e9eef9;
-  --card:#0f1422;
-  --muted:#9fb0d1;
-  --accent:#E6002D; /* H-Mart red */
+  /* === Theme variables === */
+:root {
+  --bg: #0b0f19;        /* page background (dark) */
+  --fg: #e9eef9;        /* default text (dark) */
+  --card: #0f1422;      /* card surfaces (dark) */
+  --muted: #9fb0d1;     /* secondary text (dark) */
+  --accent: #E6002D;    /* H-Mart red */
+
+  /* shared surfaces */
+  --surface: #111927;   /* buttons, chips, inputs (dark) */
+  --border: #22304a;    /* borders (dark) */
+}
+
+/* Light theme overrides (applied to <body class="light">) */
+body.light {
+  --bg: #f6f8fc;
+  --fg: #0b0f19;
+  --card: #ffffff;
+  --muted: #6b7a93;
+
+  --surface: #f4f6fb;
+  --border: #e1e6f0;
+}
+
+/* Apply variables globally */
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px; }
+
+header {
+  position: sticky; top: 0; z-index: 9;
+  display: flex; gap: 8px; align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+h1{font-size:1.1rem;margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.9rem}
+
+main{display:grid;grid-template-columns:1fr;gap:10px;padding:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Buttons / chips / inputs now use theme vars */
+.btn{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.btn.green{ background:#0f3120; border-color:#1e7448 } /* keep special green */
+
+.pill, .chip{
+  display:inline-flex; gap:6px; align-items:center;
+  border:1px solid var(--border);
+  background: var(--surface);
+  padding:6px 10px; border-radius:999px; font-size:.8rem; color: var(--fg);
+}
+
+input,select{
+  background: var(--card);
+  border:1px solid var(--border);
+  color: var(--fg);
+  border-radius:8px; padding:8px;
+}
+
+code,.code{
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  background: var(--bg);
+  border:1px solid var(--border);
+  border-radius:6px; padding:2px 6px;
+}
+
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border-bottom:1px solid var(--border);padding:6px 8px;text-align:left}
+
+.imgbox{
+  width:120px;height:120px;
+  background: var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px; display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.imgbox img{max-width:100%;max-height:100%;display:block}
+
+/* Bottom tabs */
+.tabs{
+  position:sticky; bottom:0; left:0; right:0;
+  background: var(--card);
+  border-top:1px solid var(--border);
+  display:flex; gap:6px; padding:6px; justify-content:space-around; z-index:10;
+}
+.tabbtn{
+  flex:1; text-align:center; padding:8px; border-radius:8px;
+  border:1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  font-size:.8rem;
+}
+.tabbtn.active{ background: var(--accent); border-color:#b00020; color:#fff }
+
+/* Lists */
+.list{max-height:60vh;overflow:auto;border:1px solid var(--border);border-radius:10px}
+.list .rowline{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border)}
+/* apply variables */
+body{ background:var(--bg); color:var(--fg); }
+.card{ background:var(--card); }
 }
 body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
 header{position:sticky;top:0;z-index:9;display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid #202737;background:var(--card)}
@@ -56,20 +164,25 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
 .bigkey{padding:20px;border-radius:14px;text-align:center;background:#121723;border:1px solid #2a3345;font-size:1.6rem;font-weight:900}
 .bigkey.big{grid-column:span 3}
 
-/* ===== Checkout visuals (ONE clean version) ===== */
+/* Checkout visuals */
 .checkout-area{
   display:flex; align-items:center; gap:12px;
-  padding:10px; border:1px solid #22304a; border-radius:12px;
-  background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.05));
+  padding:10px; border:1px solid var(--border); border-radius:12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.05));
 }
-.avatar{
+
+/* Avatar (supports .avatar) */
+.avatar, .customerAvatar{
   width:72px; height:72px; border-radius:12px; overflow:hidden;
-  border:1px solid #22304a; background:#0e121c; flex:0 0 auto;
+  border:1px solid var(--border); background: var(--card);
+  display:flex; align-items:center; justify-content:center;
 }
-.avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+.avatar img, .customerAvatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+/* Belt */
 .belt{
   position:relative; flex:1; height:80px; border-radius:10px; overflow:hidden;
-  border:1px solid #22304a; background:#0f1422;
+  border:1px solid var(--border); background: var(--card);
 }
 .belt::before{
   content:""; position:absolute; inset:0;
@@ -77,35 +190,42 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
   animation: beltMove 2.8s linear infinite; pointer-events:none;
 }
 @keyframes beltMove{ 0%{ transform: translateX(0) } 100%{ transform: translateX(-48px) } }
+
 #beltItems{ position:absolute; inset:0; }
+
 .belt-item{
   position:absolute; bottom:10px; width:58px; height:58px;
   display:flex; align-items:center; justify-content:center;
-  background:#121723; border:1px solid #2a3345; border-radius:10px;
+  background: var(--surface); border:1px solid var(--border); border-radius:10px;
   box-shadow:0 2px 6px rgba(0,0,0,.25); font-size:30px; user-select:none;
   animation: slideAcross 6s linear infinite;
 }
 .belt-item .hint{
   position:absolute; top:-18px; left:50%; transform:translateX(-50%);
-  font-size:.70rem; color:#9fb0d1; background:rgba(0,0,0,.35); padding:2px 6px; border-radius:6px;
-  border:1px solid #22304a;
+  font-size:.70rem; color:var(--muted);
+  background: rgba(0,0,0,.35); padding:2px 6px; border-radius:6px; border:1px solid var(--border);
 }
 @keyframes slideAcross{
   0%{ transform:translateX(110%); opacity:0 }
   10%{ opacity:1 } 90%{ opacity:1 }
   100%{ transform:translateX(-120%); opacity:0 }
 }
-.register{ background:#0e121c; border:1px solid #2a3345; border-radius:12px; padding:10px; display:grid; gap:8px; }
+
+/* Register */
+.register{
+  background: var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:10px; display:grid; gap:8px;
+}
 .register .display{
   font-family:ui-monospace, Menlo, Consolas, monospace;
-  background:#0b0f19; border:1px solid #26314a; border-radius:8px;
+  background: var(--bg); border:1px solid var(--border); border-radius:8px;
   padding:10px; font-size:1.1rem; letter-spacing:2px;
   display:flex; align-items:center; justify-content:space-between;
 }
 .register .kbd{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .kkey{
   padding:14px 0; text-align:center; border-radius:10px;
-  background:#121723; border:1px solid #2a3345; font-weight:800; font-size:1.1rem;
+  background: var(--surface); border:1px solid var(--border); font-weight:800; font-size:1.1rem;
   user-select:none; cursor:pointer;
 }
 .kkey.wide{ grid-column:span 3; }
@@ -139,6 +259,17 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
 </style>
 </head>
 <body>
+  <body>
+<script>
+  // Apply saved theme ASAP so first paint matches user preference
+  (function () {
+    try {
+      if (localStorage.getItem('THEME') === 'light') {
+        document.body.classList.add('light');
+      }
+    } catch (e) {}
+  })();
+</script>
 <header>
   <h1 class="brand">
     <span class="hmart-badge">H-Mart</span> PLU Trainer
@@ -331,6 +462,15 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
       </div>
     </div>
   </section>
+
+  <div id="settingsPanel" class="card" style="display:none; position:fixed; right:10px; top:56px; width:260px; z-index:20">
+  <h3 style="margin:6px 0">Settings</h3>
+  <div class="row">
+    <button class="btn" id="toggleTheme">Toggle Light/Dark</button>
+    <button class="btn" id="closeSettings">Close</button>
+  </div>
+  <p class="small muted" style="margin-top:8px">More settings can go here later.</p>
+</div>
 </main>
 
 <!-- Bottom tabs -->
@@ -570,9 +710,42 @@ const $$ = s=>[...document.querySelectorAll(s)];
 const store = {
   save(k,v){ localStorage.setItem(k, JSON.stringify(v)); },
   get(k,f){ try{ return JSON.parse(localStorage.getItem(k)) ?? f } catch{ return f } },
-  del(k){ localStorage.removeItem(k) }
+  del(k){ localStorage.removeItem(k); }
 };
+// ---------------- Settings + Theme ----------------
 
+// Helpers so both buttons use the same logic
+function setTheme(mode) {
+  if (mode === 'light') {
+    document.body.classList.add('light');
+  } else {
+    document.body.classList.remove('light');
+  }
+  try { localStorage.setItem('THEME', mode); } catch(e){}
+}
+
+function toggleTheme() {
+  const light = document.body.classList.toggle('light');
+  try { localStorage.setItem('THEME', light ? 'light' : 'dark'); } catch(e){}
+}
+
+// Bind both theme buttons (header + settings panel)
+document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+document.getElementById('toggleTheme')?.addEventListener('click', toggleTheme);
+
+// Settings button behavior (open/close the panel)
+const settingsBtn   = document.getElementById('settingsBtn');
+const settingsPanel = document.getElementById('settingsPanel');
+
+document.getElementById('closeSettings')?.addEventListener('click', ()=>{
+  if (settingsPanel) settingsPanel.style.display = 'none';
+});
+
+settingsBtn?.addEventListener('click', ()=>{
+  if (!settingsPanel) return;
+  const cur = settingsPanel.style.display;
+  settingsPanel.style.display = (cur && cur !== 'none') ? 'none' : 'block';
+});
 // --- Format helpers / pretty stats text ---
 function fmt(n){ return Number(n||0).toLocaleString(); }
 function accuracyPct(stats){ return stats.seen ? Math.round(100 * stats.correct / stats.seen) : 0; }
@@ -750,29 +923,33 @@ showQuiz(); updateDueBadge();
 
 // === Customer avatars (PNG files you uploaded to /avatars) ===
 const AVATARS = [
-  'avatars/avatar_01.png',
-  'avatars/avatar_02.png',
-  'avatars/avatar_03.png',
-  'avatars/avatar_04.png',
-  'avatars/avatar_05.png',
-  'avatars/avatar_06.png',
-  'avatars/avatar_07.png',
-  'avatars/avatar_08.png',
-  'avatars/avatar_09.png',
+  'avatars/avatar_01.png','avatars/avatar_02.png','avatars/avatar_03.png',
+  'avatars/avatar_04.png','avatars/avatar_05.png','avatars/avatar_06.png',
+  'avatars/avatar_07.png','avatars/avatar_08.png','avatars/avatar_09.png',
   'avatars/avatar_10.png'
 ];
 
 function setRandomAvatar(){
-  const avatar = AVATARS[Math.floor(Math.random()*AVATARS.length)];
-  const el = document.getElementById('customerAvatar');
-  if (el) el.innerHTML = `<img src="${avatar}" alt="customer" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`;
+  const src = AVATARS[Math.floor(Math.random()*AVATARS.length)];
+  const el  = document.getElementById('customerAvatar');
+  if (!el) return;
+
+  const img = new Image();
+  img.alt = "customer";
+  img.style.width = "100%";
+  img.style.height = "100%";
+  img.style.objectFit = "cover";
+  img.style.borderRadius = "12px";
+
+  img.onload = () => { el.innerHTML = ""; el.appendChild(img); };
+  img.onerror = () => { el.textContent = "🛒"; }; // fallback glyph
+  img.src = src;
 }
 
 // Preload avatars to avoid flashes
 (function preloadAvatars(){
   AVATARS.forEach(src=>{ const i=new Image(); i.src=src; });
 })();
-
 // Category → emoji icons for belt preview
 const CAT_ICON = {
   // Fruits
@@ -804,12 +981,19 @@ function renderBelt(queue, showHint=false){
   if(!belt) return;
   belt.innerHTML = '';
 
-  // show up to the next 6 items
   const upcoming = queue.slice(0, 6);
+  if (!upcoming.length){
+    const empty = document.createElement('div');
+    empty.className = 'belt-item';
+    empty.textContent = '—';
+    empty.style.bottom = '15px';
+    belt.appendChild(empty);
+    return;
+  }
+
   upcoming.forEach((it, i)=>{
     const div = document.createElement('div');
     div.className = 'belt-item';
-    // first item gets an icon (and optional label); others are boxes
     div.textContent = (i === 0 && showHint) ? iconFor(it) : '📦';
 
     if (i === 0 && showHint) {
@@ -818,8 +1002,8 @@ function renderBelt(queue, showHint=false){
       tag.textContent = it.category;
       div.appendChild(tag);
     }
-    // a touch of variation
-    const lane = i % 2 ? 10 : 20;
+
+    const lane  = i % 2 ? 10 : 20;
     const delay = i * 0.35;
     div.style.bottom = `${lane}px`;
     div.style.animationDelay = `${delay}s`;
@@ -827,7 +1011,6 @@ function renderBelt(queue, showHint=false){
     belt.appendChild(div);
   });
 }
-
 // When an item is completed, slide the belt forward visually
 function shiftBelt(){
   const belt = document.getElementById('beltItems');
@@ -835,7 +1018,6 @@ function shiftBelt(){
   belt.firstElementChild.remove(); // remove the front-most item
 }
 <!-- REPLACE your Checkout Game JS with this -->
-<script>
 // --------------- Checkout Game ----------------
 let CG = null;
 const PRESETS = {
@@ -1177,6 +1359,44 @@ if (!localStorage.getItem('ONBOARDED')) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
   }
+</script>
+    <!-- Settings + Theme wiring -->
+<script>
+  const settingsBtn   = document.getElementById('settingsBtn');
+  const settingsPanel = document.getElementById('settingsPanel');
+
+  // Open/close the settings card
+  settingsBtn?.addEventListener('click', () => {
+    const visible = settingsPanel && settingsPanel.style.display === 'block';
+    if (settingsPanel) settingsPanel.style.display = visible ? 'none' : 'block';
+  });
+
+  // Close button inside the settings card
+  document.getElementById('closeSettings')?.addEventListener('click', () => {
+    if (settingsPanel) settingsPanel.style.display = 'none';
+  });
+
+  // Toggle theme from the settings card
+  document.getElementById('toggleTheme')?.addEventListener('click', () => {
+    document.body.classList.toggle('light');
+    try {
+      localStorage.setItem(
+        'THEME',
+        document.body.classList.contains('light') ? 'light' : 'dark'
+      );
+    } catch (e) {}
+  });
+
+  // Also wire the small header button if you want it to flip theme directly
+  document.getElementById('themeToggle')?.addEventListener('click', () => {
+    document.body.classList.toggle('light');
+    try {
+      localStorage.setItem(
+        'THEME',
+        document.body.classList.contains('light') ? 'light' : 'dark'
+      );
+    } catch (e) {}
+  });
 </script>
 </body>
 </html>
