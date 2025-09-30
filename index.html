@@ -92,6 +92,66 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
 .light .bigkey{ background:#f9f9fc; border-color:#d9dee8; }
 .light .imgbox{ background:#f7f8fb; border-color:#d9dee8; }
 .light header{ background:#ffffff; border-bottom-color:#d9dee8; }
+  /* === Checkout visuals (customer + conveyor belt) === */
+.checkout-area{
+  display:flex; align-items:center; gap:12px;
+  padding:10px; border:1px solid #22304a; border-radius:12px;
+  background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.05));
+}
+.avatar{ width:72px; height:72px; border-radius:12px; overflow:hidden; border:1px solid #22304a; background:#0e121c; flex:0 0 auto; }
+.avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+.belt{
+  position:relative; flex:1; height:80px; border-radius:10px; overflow:hidden;
+  border:1px solid #22304a; background:#0f1422;
+}
+.belt::before{
+  content:""; position:absolute; inset:0;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255,255,255,.04) 0 12px,
+    rgba(255,255,255,.02) 12px 24px
+  );
+  animation: beltMove 2.8s linear infinite;
+  pointer-events:none;
+}
+@keyframes beltMove{ 0%{ transform: translateX(0) } 100%{ transform: translateX(-48px) } }
+
+#beltItems{ position:absolute; inset:0; }
+.belt-item{
+  position:absolute; bottom:10px; width:58px; height:58px;
+  display:flex; align-items:center; justify-content:center;
+  background:#121723; border:1px solid #2a3345; border-radius:10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  font-size:30px; user-select:none;
+  animation: slideAcross 6s linear infinite;
+}
+.belt-item .hint{
+  position:absolute; top:-18px; left:50%; transform:translateX(-50%);
+  font-size:.70rem; color:#9fb0d1;
+  background:rgba(0,0,0,.35); padding:2px 6px; border-radius:6px;
+  border:1px solid #22304a;
+}
+@keyframes slideAcross{
+  0%   { transform:translateX(110%); opacity:.0 }
+  10%  { opacity:1 }
+  90%  { opacity:1 }
+  100% { transform:translateX(-120%); opacity:.0 }
+}
+
+/* light theme tweaks for belt */
+.light .checkout-area{ border-color:#e4e9f3; background:#f8f9fc; }
+.light .avatar{ background:#fff; border-color:#e4e9f3; }
+.light .belt{ background:#fff; border-color:#e6ebf5; }
+.light .belt::before{
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(0,0,0,.04) 0 12px,
+    rgba(0,0,0,.02) 12px 24px
+  );
+}
+.light .belt-item{ background:#f4f6fb; border-color:#e1e6f0; }
+.light .belt-item .hint{ background:#eef1f6; border-color:#dfe6f2; color:#6b7a93; }
 /* === H-MART branding bits === */
 .brand{
   display:flex; align-items:center; gap:10px; margin:0;
@@ -179,54 +239,60 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
     </div>
   </section>
 
-  <!-- Checkout -->
-  <section id="panelCheckout" class="panel">
-    <div class="card">
-      <h2>Checkout Game — Simulated Register</h2>
-      <div class="row">
-        <button class="btn green" id="cgStart">Start</button>
-        <select id="cgPreset">
-          <option value="rookie">Rookie</option>
-          <option value="cashier" selected>Cashier</option>
-          <option value="speed">Speed</option>
-          <option value="expert">Expert</option>
-        </select>
-        <select id="cgTimer">
-          <option value="0">Timer Off</option><option value="30">30s</option><option value="20">20s</option><option value="10">10s</option><option value="5">5s</option>
-        </select>
-      </div>
-      <div class="row" style="margin-top:6px">
-        <div class="chip">Customer <b id="cgCust">0</b>/<b id="cgCustTotal">0</b></div>
-        <div class="chip">Items <b id="cgItem">0</b>/<b id="cgItemTotal">0</b></div>
-        <div class="chip">Streak <b id="cgStreak">0</b></div>
-      </div>
-      <div class="row" style="margin:8px 0">
-        <div class="imgbox"><img id="cgImg" style="display:none"><span class="muted small" id="cgNoImg">No picture</span></div>
-        <div style="flex:1">
-          <div><b id="cgName">—</b> <span class="muted">(<span id="cgCat">—</span>)</span></div>
-          <div class="row" style="margin-top:8px">
-            <input id="cgInput" inputmode="numeric" placeholder="Enter PLU…" maxlength="5">
-            <button class="btn" id="cgEnter">Enter</button>
-            <button class="btn" id="cgSkip">Skip</button>
-          </div>
-          <div id="cgFeedback" class="small" style="margin-top:6px"></div>
-        </div>
-      </div>
-    </div>
-  </section>
+<!-- Checkout -->
+<section id="panelCheckout" class="panel">
+  <div class="card">
+    <h2>Checkout Game — Simulated Register</h2>
 
-  <!-- Browse / Search tab (full list with filters + favorites) -->
-  <section id="panelBrowse" class="panel">
-    <div class="card">
-      <h2>Browse — All Items <span id="itemCount" class="muted small"></span></h2>
-      <div class="row" style="margin-bottom:8px">
-        <input id="searchBox" placeholder="Search name or code…">
-        <select id="catFilter"></select>
-        <label class="chip"><input type="checkbox" id="favOnly"> ⭐ Favorites only</label>
-      </div>
-      <div class="list" id="browseList"></div>
+    <div class="row">
+      <button class="btn green" id="cgStart">Start</button>
+      <select id="cgPreset">
+        <option value="rookie">Rookie</option>
+        <option value="cashier" selected>Cashier</option>
+        <option value="speed">Speed</option>
+        <option value="expert">Expert</option>
+      </select>
+      <select id="cgTimer">
+        <option value="0">Timer Off</option>
+        <option value="30">30s</option>
+        <option value="20">20s</option>
+        <option value="10">10s</option>
+        <option value="5">5s</option>
+      </select>
     </div>
-  </section>
+
+    <label class="chip" style="margin-top:6px">
+      <input type="checkbox" id="showCatHint"> Show Category Hint (next item)
+    </label>
+
+    <!-- Visuals: avatar + conveyor belt -->
+    <div id="checkoutVisuals" class="checkout-area" style="margin-top:8px">
+      <div id="customerAvatar" class="avatar"></div>
+      <div class="belt">
+        <div id="beltItems"></div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:6px">
+      <div class="chip">Customer <b id="cgCust">0</b>/<b id="cgCustTotal">0</b></div>
+      <div class="chip">Items <b id="cgItem">0</b>/<b id="cgItemTotal">0</b></div>
+      <div class="chip">Streak <b id="cgStreak">0</b></div>
+    </div>
+
+    <div class="row" style="margin:8px 0">
+      <div class="imgbox"><img id="cgImg" style="display:none"><span class="muted small" id="cgNoImg">No picture</span></div>
+      <div style="flex:1">
+        <div><b id="cgName">—</b> <span class="muted">(<span id="cgCat">—</span>)</span></div>
+        <div class="row" style="margin-top:8px">
+          <input id="cgInput" inputmode="numeric" placeholder="Enter PLU…" maxlength="5">
+          <button class="btn" id="cgEnter">Enter</button>
+          <button class="btn" id="cgSkip">Skip</button>
+        </div>
+        <div id="cgFeedback" class="small" style="margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+</section>
 
   <!-- Big keypad tab -->
   <section id="panelKeypad" class="panel">
@@ -740,6 +806,39 @@ const PRESETS = {
   speed:{customers:12, maxItems:8},
   expert:{customers:15, maxItems:12}
 };
+  // === Customer avatars (PNG files you uploaded to /avatars) ===
+const AVATARS = [
+  'avatars/avatar_01.png',
+  'avatars/avatar_02.png',
+  'avatars/avatar_03.png',
+  'avatars/avatar_04.png',
+  'avatars/avatar_05.png',
+  'avatars/avatar_06.png',
+  'avatars/avatar_07.png',
+  'avatars/avatar_08.png',
+  'avatars/avatar_09.png',
+  'avatars/avatar_10.png'
+];
+
+// Simple category → emoji icon (fallback) for belt preview
+const CAT_ICON = {
+  "Apple":"🍎","Pear":"🍐","Melon":"🍈","Watermelon":"🍉","Persimmon":"🧡",
+  "Quince":"🍏","Banana":"🍌","Plantain":"🍌","Peach":"🍑","Nectarine":"🍑",
+  "Avocado":"🥑","Mango":"🥭","Coconut":"🥥","Papaya":"🧡","Pomegranate":"🔴",
+  "Tropical Fruit":"🥭","Pineapple":"🍍","Citrus":"🍋","Orange":"🍊","Mandarin":"🍊",
+  "Plum":"🟣","Grapefruit":"🍊","Pomelo":"🍊","Grape":"🍇",
+  "Herbs":"🌿","Herbs / Aromatics":"🌿","Leafy Greens":"🥬","Root Vegetable":"🥕",
+  "Onion":"🧅","Garlic":"🧄","Potato":"🥔","Yam":"🍠","Cabbage":"🥬","Brassica":"🥦",
+  "Lettuce":"🥬","Stalks":"🥬","Asparagus":"🥬","Corn":"🌽","Beans":"🫘",
+  "Tomato":"🍅","Chayote":"🥗","Pepper":"🫑","Pods":"🫛","Flowers / Special Veggies":"🌺",
+  "Pandan":"🌿","Pandan Leaf":"🌿","Papaya":"🧡"
+};
+function iconFor(it){ return CAT_ICON[it.category] || "🛒"; }
+
+// Preload avatars to avoid flashes
+(function preloadAvatars(){
+  AVATARS.forEach(src=>{ const i=new Image(); i.src=src; });
+})();
 function startCG(){
   const p = PRESETS[$("#cgPreset").value];
   const timer = parseInt($("#cgTimer").value,10)||0;
