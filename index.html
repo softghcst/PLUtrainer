@@ -117,33 +117,12 @@ code,.code{
 }
 .tabbtn.active{ background: var(--accent); border-color:#b00020; color:#fff }
 
+.panel{ display:none }
+.panel.active{ display:block }
+  
 /* Lists */
 .list{max-height:60vh;overflow:auto;border:1px solid var(--border);border-radius:10px}
 .list .rowline{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border)}
-h1{font-size:1.1rem;margin:0} .muted{color:var(--muted)} .small{font-size:.9rem}
-main{display:grid;grid-template-columns:1fr;gap:10px;padding:10px}
-.card{background:#0e1320;border:1px solid #1e2636;border-radius:14px;padding:10px}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.btn{background:#111927;border:1px solid #273145;color:#e4ecfa;border-radius:10px;padding:8px 10px;cursor:pointer}
-.btn.green{background:#0f3120;border-color:#1e7448}
-.pill{display:inline-flex;gap:6px;align-items:center;border:1px solid #26314a;background:#0e121c;padding:6px 10px;border-radius:999px}
-input,select{background:#0e1320;border:1px solid #26314a;color:#fff;border-radius:8px;padding:8px}
-code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;border:1px solid #26314a;border-radius:6px;padding:2px 6px}
-.table{width:100%;border-collapse:collapse} .table th,.table td{border-bottom:1px solid #22304a;padding:6px 8px;text-align:left}
-.ok{color:#3bd17f} .bad{color:#ff6b6b}
-.imgbox{width:120px;height:120px;background:#0d1220;border:1px solid #22304a;border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.imgbox img{max-width:100%;max-height:100%;display:block}
-
-/* Bottom tabs */
-.tabs{position:sticky;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid #202737;display:flex;gap:6px;padding:6px;justify-content:space-around;z-index:10}
-.tabbtn{flex:1;text-align:center;padding:8px;border-radius:8px;border:1px solid #2a3345;background:#111522;color:#cfd6e6;font-size:.8rem}
-.tabbtn.active{background:var(--accent);border-color:#b00020;color:#fff}
-.panel{display:none}
-.panel.active{display:block}
-
-.list{max-height:60vh;overflow:auto;border:1px solid #22304a;border-radius:10px}
-.list .rowline{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #22304a}
-.chip{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;border:1px solid #2a3345;background:#0e121c;font-size:.8rem;color:#cfd6e6}
 
 /* SRS Badge colors */
 #srsBadge { padding: 1px 6px; border-radius: 6px; }
@@ -1011,7 +990,6 @@ function shiftBelt(){
   if(!belt || !belt.firstElementChild) return;
   belt.firstElementChild.remove(); // remove the front-most item
 }
-<!-- REPLACE your Checkout Game JS with this -->
 // --------------- Checkout Game ----------------
 let CG = null;
 const PRESETS = {
