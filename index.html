@@ -42,14 +42,56 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
 .list{max-height:60vh;overflow:auto;border:1px solid #22304a;border-radius:10px}
 .list .rowline{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #22304a}
 .chip{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;border:1px solid #2a3345;background:#0e121c;font-size:.8rem;color:#cfd6e6}
+  /* SRS Badge colors */
+#srsBadge {
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+#srsBadge.ON {
+  background: #0f3120;
+  color: #3bd17f;
+  font-weight: 700;
+}
+#srsBadge.OFF {
+  background: #2a2f3a;
+  color: #9fb0d1;
+}
+  /* Light theme variants for the SRS badge */
+.light #srsBadge.ON {
+  background: #e8f7ee;   /* pale green */
+  color: #147a3a;        /* deep green text */
+}
+.light #srsBadge.OFF {
+  background: #eef1f6;   /* pale gray-blue */
+  color: #6b7a93;        /* muted label */
+}
 .star{cursor:pointer;font-size:1.1rem}
 .bigpad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .bigkey{padding:20px;border-radius:14px;text-align:center;background:#121723;border:1px solid #2a3345;font-size:1.6rem;font-weight:900}
 .bigkey.big{grid-column:span 3}
 
 /* Light theme */
-.light{--bg:#f7f8fb;--fg:#0b0f19;--card:#ffffff;--muted:#44516b}
+.light{
+  --bg:#f2f3f7;   /* light gray background */
+  --fg:#0b0f19;
+  --card:#ffffff; /* cards stay white */
+  --muted:#44516b;
+}
 
+/* Light theme contrast fixes */
+.light body{ background:#f2f3f7; }
+.light .card{ 
+  background:#ffffff; 
+  border-color:#d9dee8; 
+  box-shadow:0 1px 3px rgba(0,0,0,0.05);
+}
+.light .list{ border-color:#d9dee8; }
+.light .list .rowline{ border-bottom-color:#e1e6f0; }
+.light input,.light select{ background:#ffffff; color:#0b0f19; border-color:#d6dbe7; }
+.light .pill{ background:#f7f8fb; border-color:#d9dee8; }
+.light .bigkey{ background:#f9f9fc; border-color:#d9dee8; }
+.light .imgbox{ background:#f7f8fb; border-color:#d9dee8; }
+.light header{ background:#ffffff; border-bottom-color:#d9dee8; }
 /* === H-MART branding bits === */
 .brand{
   display:flex; align-items:center; gap:10px; margin:0;
@@ -78,9 +120,22 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
   <h1 class="brand">
     <span class="hmart-badge">H-Mart</span> PLU Trainer
   </h1>
-  <div class="row" style="margin-left:auto">
+  <div class="row" style="margin-left:auto;flex-wrap:wrap;gap:8px">
     <button class="btn" id="themeToggle">🌙/☀️</button>
     <button class="btn" id="settingsBtn">⚙️</button>
+
+    <label class="chip">
+      <input type="checkbox" id="fxHaptics" checked> Haptics
+    </label>
+
+    <label class="chip">
+      <input type="checkbox" id="fxSound"> Sound
+    </label>
+
+    <label class="chip">
+      <input type="checkbox" id="srsMode"> SRS
+      <span id="srsBadge" class="OFF">OFF</span>
+    </label>
   </div>
 </header>
 <main>
@@ -109,10 +164,12 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
   <section id="panelQuiz" class="panel">
     <div class="card">
       <h2>Quiz — Register</h2>
-      <div class="row" style="margin:6px 0">
-        <div class="chip">Current: <b id="qName">—</b> <span class="muted">(<span id="qCat">—</span>)</span></div>
-        <div class="chip">Target length: <b id="qLen">—</b></div>
-      </div>
+<div class="row" style="margin:6px 0">
+  <div class="chip">Current: <b id="qName">—</b> <span class="muted">(<span id="qCat">—</span>)</span></div>
+  <div class="chip">Target length: <b id="qLen">—</b></div>
+  <div class="chip">Due: <b id="dueCount">0</b></div>
+  <div class="chip">SRS: <b id="srsBadge">OFF</b></div>
+</div>
       <div class="row">
         <input id="qInput" inputmode="numeric" placeholder="Enter PLU…" maxlength="5">
         <button class="btn" id="qSubmit">Enter</button>
@@ -191,12 +248,16 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
   </section>
 
   <!-- Stats tab -->
-  <section id="panelStats" class="panel">
-    <div class="card">
-      <h2>Stats</h2>
-      <div id="stats"></div>
+<section id="panelStats" class="panel">
+  <div class="card">
+    <h2>Stats</h2>
+    <div id="stats"></div>
+    <div class="row" style="margin-top:10px; gap:8px">
+      <button class="btn" id="exportData">💾 Save Backup</button>
+      <button class="btn" id="shareStats">📤 Share Stats</button>
     </div>
-  </section>
+  </div>
+</section>
 </main>
 
 <!-- Bottom tabs -->
@@ -438,7 +499,47 @@ const store = {
   get(k,f){ try{ return JSON.parse(localStorage.getItem(k)) ?? f } catch{ return f } },
   del(k){ localStorage.removeItem(k) }
 };
+  // Format helpers for numbers, percentages, and pretty stats text
+function fmt(n){ return Number(n||0).toLocaleString(); }
+function accuracyPct(stats){
+  return stats.seen ? Math.round(100 * stats.correct / stats.seen) : 0;
+}
+function prettyStatsText(){
+  const acc = accuracyPct(STATS);
+  const lines = [
+    "PLU Trainer — Current Stats",
+    `• Seen: ${fmt(STATS.seen)}`,
+    `• Correct: ${fmt(STATS.correct)}`,
+    `• Accuracy: ${acc}%`,
+    `• Current Streak: ${fmt(STATS.streak)}`,
+    `• Best Streak: ${fmt(STATS.bestStreak)}`,
+    `• Timestamp: ${new Date().toLocaleString()}`
+  ];
+  return lines.join("\n");
+}
+// --- Feedback (Haptics + Sound) ---
+function giveFeedback(type="light") {
+  // Haptics (vibration if supported)
+  if ($("#fxHaptics")?.checked && navigator.vibrate) {
+    if (type === "success") navigator.vibrate([30]);
+    else if (type === "error") navigator.vibrate([60, 40, 60]);
+    else navigator.vibrate(20);
+  }
 
+  // Optional click sound
+  if ($("#fxSound")?.checked) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.value = (type === "success") ? 880 : (type === "error" ? 220 : 440);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+    osc.stop(ctx.currentTime + 0.15);
+  }
+}
 // Title Case (preserves internal apostrophes like D’Anjou)
 function toTitle(s){
   return s.toLowerCase().replace(/([\p{L}\p{N}]+)/gu, w=>{
@@ -513,32 +614,124 @@ $("#learnPic").onclick = ()=>{
   showLearn();
 };
 showLearn();
+  // --------- Spaced Repetition (SRS) ----------
+const SRS = store.get('SRS', {}); // keyed by code -> {ef, reps, intervalDays, dueTs}
+function saveSRS(){ store.save('SRS', SRS); }
+function nowTs(){ return Date.now(); }
+function days(n){ return n*24*60*60*1000; }
 
+// Get/create record for a code
+function srsGet(code){
+  if(!SRS[code]) SRS[code] = { ef:2.5, reps:0, intervalDays:0, dueTs: nowTs() }; // due now
+  return SRS[code];
+}
+
+// SM-2 inspired, simplified:
+// - correct: reps+1; interval: 1d, then 6d, then round(prev*ef); ef += 0.1 (cap 2.8)
+// - wrong:   reps=0;  interval=1d; ef -= 0.3 (floor 1.3)
+function srsUpdate(code, correct){
+  const r = srsGet(code);
+  if(correct){
+    r.reps += 1;
+    if(r.reps === 1) r.intervalDays = 1;
+    else if(r.reps === 2) r.intervalDays = 6;
+    else r.intervalDays = Math.round(Math.max(1, r.intervalDays * r.ef));
+    r.ef = Math.min(2.8, r.ef + 0.1);
+  } else {
+    r.reps = 0;
+    r.intervalDays = 1;
+    r.ef = Math.max(1.3, r.ef - 0.3);
+  }
+  r.dueTs = nowTs() + days(r.intervalDays);
+  saveSRS();
+}
+
+// All items that are due now (or overdue)
+function srsDueItems(){
+  const t = nowTs();
+  const due = [];
+  for(const it of DATA){
+    const rec = srsGet(it.code);
+    if(rec.dueTs <= t) due.push(it);
+  }
+  return due;
+}
+
+// Count badge updater
+function updateDueBadge(){
+  const el = document.getElementById('dueCount');
+  if(!el) return;
+  el.textContent = srsDueItems().length;
+}
 // --------------- Quiz ----------------
-function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a }
-let q = {i:0, order:shuffle([...DATA])};
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function buildQuizOrder(){
+  if ($("#srsMode")?.checked){
+    const due = srsDueItems();
+    if (due.length) return shuffle(due);
+  }
+  return shuffle([...DATA]);
+}
+
+let q = { i: 0, order: buildQuizOrder() };
 
 function showQuiz(){
+  if (q.i >= q.order.length){
+    q.i = 0;
+    q.order = buildQuizOrder();
+  }
   const it = q.order[q.i % q.order.length];
   $("#qName").textContent = it.name;
   $("#qCat").textContent = it.category;
   $("#qLen").textContent = it.code.length;
-  $("#qInput").value="";
-  $("#qFeedback").textContent="";
+  $("#qInput").value = "";
+  $("#qFeedback").textContent = "";
 }
-function submitQuiz(){
-  const it = q.order[q.i % q.order.length];
-  const val = $("#qInput").value.trim();
-  const ok = val===it.code;
-  $("#qFeedback").innerHTML = ok ? `✅ Correct: ${it.code}` : `❌ ${val||'—'} → ${it.code}`;
-  STATS.seen++; if(ok){ STATS.correct++; STATS.streak++; STATS.bestStreak=Math.max(STATS.bestStreak, STATS.streak); } else { STATS.streak=0; }
-  saveStats(); renderStats();
-}
-$("#qSubmit").onclick = submitQuiz;
-$("#qNext").onclick = ()=>{ q.i++; showQuiz(); };
-$("#qInput").addEventListener('keydown', e=>{ if(e.key==='Enter') submitQuiz(); });
-showQuiz();
 
+function submitQuiz(){
+  const it  = q.order[q.i % q.order.length];
+  const val = $("#qInput").value.trim();
+  const ok  = (val === it.code);
+
+  $("#qFeedback").innerHTML = ok ? `✅ Correct: ${it.code}` : `❌ ${val||'—'} → ${it.code}`;
+
+  // SRS + badge
+  srsUpdate(it.code, ok);
+  updateDueBadge();
+
+  if (ok) giveFeedback?.("success"); else giveFeedback?.("error");
+
+  STATS.seen++;
+  if (ok){
+    STATS.correct++;
+    STATS.streak++;
+    STATS.bestStreak = Math.max(STATS.bestStreak, STATS.streak);
+  } else {
+    STATS.streak = 0;
+  }
+  saveStats();
+  renderStats();
+
+  q.i++;
+  showQuiz();
+}
+
+$("#qSubmit").onclick = submitQuiz;
+$("#qNext").onclick   = ()=>{ q.i++; showQuiz(); };
+$("#qInput").addEventListener('keydown', e=>{ if(e.key==='Enter') submitQuiz(); });
+
+showQuiz();
+updateDueBadge(); // ← make the “Due” chip correct on first load
+ 
+
+// Initialize badge state on load
 // --------------- Checkout Game ----------------
 let CG = null;
 const PRESETS = {
@@ -554,10 +747,30 @@ function startCG(){
   nextCustomer();
 }
 function nextCustomer(){
-  CG.cust++; if(CG.cust>CG.custTotal){ $("#cgFeedback").textContent="🏁 Done!"; return; }
-  const n = 1 + Math.floor(Math.random()*PRESETS[$("#cgPreset").value].maxItems);
-  CG.item=0; CG.itemTotal=n; CG.queue = shuffle([...DATA]).slice(0,n);
-  $("#cgCust").textContent = CG.cust; $("#cgCustTotal").textContent = CG.custTotal;
+  CG.cust++; 
+  if(CG.cust > CG.custTotal){ 
+    $("#cgFeedback").textContent = "🏁 Done!"; 
+    return; 
+  }
+
+  const maxItems = PRESETS[$("#cgPreset").value].maxItems;
+  const n = 1 + Math.floor(Math.random() * maxItems);
+
+  // Prefer SRS-due items when SRS is ON
+  let pool;
+  if ($("#srsMode")?.checked) {
+    const due = srsDueItems();
+    pool = due.length ? due : [...DATA];
+  } else {
+    pool = [...DATA];
+  }
+
+  CG.item = 0; 
+  CG.itemTotal = n; 
+  CG.queue = shuffle(pool).slice(0, n);
+
+  $("#cgCust").textContent = CG.cust; 
+  $("#cgCustTotal").textContent = CG.custTotal;
   nextItemCG();
 }
 function nextItemCG(){
@@ -578,13 +791,30 @@ function startTimer(sec, targetSel){
   }, 200);
 }
 function enterCG(){
-  const it = CG.queue[CG.item];
+  const it  = CG.queue[CG.item];
   const val = $("#cgInput").value.trim();
-  const ok = val===it.code;
-  $("#cgFeedback").textContent = ok ? `✅ ${it.code} — +1 streak!` : `❌ ${val||'—'} → ${it.code}`;
-  if(ok){ CG.streak++; STATS.seen++; STATS.correct++; } else { CG.streak=0; STATS.seen++; }
-  STATS.bestStreak = Math.max(STATS.bestStreak, CG.streak); saveStats(); renderStats();
-  CG.item++; setTimeout(nextItemCG, 400);
+  const ok  = (val === it.code);
+
+  $("#cgFeedback").textContent = ok ? `✅ ${it.code} — +1 streak!` 
+                                    : `❌ ${val||'—'} → ${it.code}`;
+
+  // SRS + badge
+  srsUpdate(it.code, ok);
+  updateDueBadge();
+
+  // Haptics/sound
+  if (ok) giveFeedback("success"); else giveFeedback("error");
+
+  // Stats
+  STATS.seen++;
+  if (ok){ STATS.correct++; CG.streak++; } 
+  else { CG.streak = 0; }
+  STATS.bestStreak = Math.max(STATS.bestStreak, CG.streak);
+  saveStats(); 
+  renderStats();
+
+  CG.item++; 
+  setTimeout(nextItemCG, 400);
 }
 function skipCG(){ CG.streak=0; nextWrong(); }
 function nextWrong(){ CG.item++; setTimeout(nextItemCG, 200); }
@@ -592,6 +822,33 @@ $("#cgStart").onclick = startCG;
 $("#cgEnter").onclick = enterCG;
 $("#cgSkip").onclick = skipCG;
 $("#cgInput").addEventListener('keydown', e=>{ if(e.key==='Enter') enterCG(); });
+
+  // --------------- SRS Badge Sync ----------------
+function updateSrsBadge() {
+  const badge = document.getElementById("srsBadge");
+  if (!badge) return;
+  if (document.getElementById("srsMode").checked) {
+    badge.textContent = "ON";
+    badge.classList.remove("OFF");
+    badge.classList.add("ON");
+  } else {
+    badge.textContent = "OFF";
+    badge.classList.remove("ON");
+    badge.classList.add("OFF");
+  }
+}
+
+// Hook into checkbox
+// ---- SRS Toggle (badge + quiz rebuild + due count) ----
+document.getElementById("srsMode")?.addEventListener("change", ()=>{
+  updateSrsBadge();
+  q = { i: 0, order: buildQuizOrder() };
+  showQuiz();
+  updateDueBadge();
+});
+
+// Run once on load
+updateSrsBadge();
 
 // --------------- Browse / Search + Favorites ----------------
 function renderBrowse(){
@@ -644,34 +901,126 @@ renderBrowse();
 updateItemCount(); // initial (e.g. 168/168)
 
 // --------------- Big Keypad ----------------
+// number keys:
 $$('.bigkey').forEach(k=>{
   const v = k.textContent.trim();
-  if(/^\d$/.test(v)) k.onclick = ()=>$("#bkInput").value += v;
+  if(/^\d$/.test(v)) k.onclick = ()=>{
+    $("#bkInput").value += v;
+    giveFeedback("light"); // ADD (tiny tap feedback)
+  };
 });
+
+// enter:
 $("#bkEnter").onclick = ()=>{
   const code = $("#bkInput").value.trim();
   const hit = DATA.find(d=>d.code===code);
   $("#bkFeedback").textContent = hit ? `✅ ${hit.name} (${hit.category})` : `❌ Not found`;
-};
-$("#bkClear").onclick = ()=>{ $("#bkInput").value=""; $("#bkFeedback").textContent=""; };
 
+  // ADD:
+  if (hit) giveFeedback("success"); else giveFeedback("error");
+};
+
+// clear:
+$("#bkClear").onclick = ()=>{
+  $("#bkInput").value="";
+  $("#bkFeedback").textContent="";
+  giveFeedback("light"); // ADD
+};
 // --------------- Stats ----------------
-function pct(a,b){ return b? Math.round(100*a/b):0 }
 function renderStats(){
+  const acc = accuracyPct(STATS);
   $("#stats").innerHTML = `
-    <div class="row">
-      <div class="chip">Seen: <b>${STATS.seen}</b></div>
-      <div class="chip">Correct: <b>${STATS.correct}</b></div>
-      <div class="chip">Accuracy: <b>${pct(STATS.correct, STATS.seen)}%</b></div>
-      <div class="chip">Current Streak: <b>${STATS.streak}</b></div>
-      <div class="chip">Best Streak: <b>${STATS.bestStreak}</b></div>
-    </div>`;
+    <div class="row" style="align-items:flex-end; gap:12px">
+      <div class="card" style="flex:1; padding:10px">
+        <div class="muted small">Seen</div>
+        <div style="font-size:1.4rem;font-weight:700">${fmt(STATS.seen)}</div>
+      </div>
+      <div class="card" style="flex:1; padding:10px">
+        <div class="muted small">Correct</div>
+        <div style="font-size:1.4rem;font-weight:700">${fmt(STATS.correct)}</div>
+      </div>
+      <div class="card" style="flex:1; padding:10px">
+        <div class="muted small">Accuracy</div>
+        <div style="font-size:1.4rem;font-weight:700">${acc}%</div>
+      </div>
+      <div class="card" style="flex:1; padding:10px">
+        <div class="muted small">Streak</div>
+        <div style="font-size:1.4rem;font-weight:700">${fmt(STATS.streak)}</div>
+      </div>
+      <div class="card" style="flex:1; padding:10px">
+        <div class="muted small">Best</div>
+        <div style="font-size:1.4rem;font-weight:700">${fmt(STATS.bestStreak)}</div>
+      </div>
+    </div>
+  `;
 }
 renderStats();
+// ---------- Export / Share ----------
+function buildBackupPayload(){
+  return {
+    when: new Date().toISOString(),
+    version: 1,
+    data: DATA,        // full PLU dataset
+    fav: [...FAV],     // starred codes
+    stats: STATS       // seen/correct/streaks
+  };
+}
 
+// 💾 Save Backup — full data as JSON file
+$("#exportData")?.addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(buildBackupPayload(), null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'plu_trainer_backup.json';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+});
+
+// 📤 Share Stats — pretty text + tiny JSON (with fallbacks)
+$("#shareStats")?.addEventListener('click', async ()=>{
+  const text = prettyStatsText();
+  const json = JSON.stringify({
+    when: new Date().toISOString(),
+    version: 1,
+    stats: STATS,
+    accuracy: accuracyPct(STATS) + "%"
+  }, null, 2);
+
+  const file = new File([json], 'plu_trainer_stats.json', {type:'application/json'});
+
+  // Try Share Sheet with text + file
+  try {
+    if (navigator.canShare && navigator.canShare({ files:[file] })) {
+      await navigator.share({ title:'PLU Trainer Stats', text, files:[file] });
+      return;
+    }
+  } catch(e){ /* user canceled */ }
+
+  // Try Share Sheet with text only
+  try {
+    if (navigator.share) {
+      await navigator.share({ title:'PLU Trainer Stats', text });
+      return;
+    }
+  } catch(e){ /* fall through */ }
+
+  // Fallback #1: copy text
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Stats copied to clipboard. Paste into Messages/Email.");
+  } catch(e) {
+    // Fallback #2: download .txt
+    const blob = new Blob([text], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'plu_trainer_stats.txt';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  }
+});
 // --- First-time onboarding tip
 if (!localStorage.getItem('ONBOARDED')) {
-  alert('Tip: Use Browse to ⭐ favorite tricky items, then practice in Quiz or Checkout. You can paste an image URL to add pictures.');
+alert('Tip: Use Browse to ⭐ favorite tricky items, then practice in Quiz or Checkout.');
   localStorage.setItem('ONBOARDED','1');
 }
 </script>
