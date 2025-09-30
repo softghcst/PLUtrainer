@@ -42,135 +42,98 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
 .list{max-height:60vh;overflow:auto;border:1px solid #22304a;border-radius:10px}
 .list .rowline{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #22304a}
 .chip{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;border:1px solid #2a3345;background:#0e121c;font-size:.8rem;color:#cfd6e6}
-  /* SRS Badge colors */
-#srsBadge {
-  padding: 1px 6px;
-  border-radius: 6px;
-}
-#srsBadge.ON {
-  background: #0f3120;
-  color: #3bd17f;
-  font-weight: 700;
-}
-#srsBadge.OFF {
-  background: #2a2f3a;
-  color: #9fb0d1;
-}
-  /* Light theme variants for the SRS badge */
-.light #srsBadge.ON {
-  background: #e8f7ee;   /* pale green */
-  color: #147a3a;        /* deep green text */
-}
-.light #srsBadge.OFF {
-  background: #eef1f6;   /* pale gray-blue */
-  color: #6b7a93;        /* muted label */
-}
+
+/* SRS Badge colors */
+#srsBadge { padding: 1px 6px; border-radius: 6px; }
+#srsBadge.ON { background:#0f3120; color:#3bd17f; font-weight:700; }
+#srsBadge.OFF{ background:#2a2f3a; color:#9fb0d1; }
+/* Light badge variants */
+.light #srsBadge.ON{ background:#e8f7ee; color:#147a3a; }
+.light #srsBadge.OFF{ background:#eef1f6; color:#6b7a93; }
+
 .star{cursor:pointer;font-size:1.1rem}
 .bigpad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .bigkey{padding:20px;border-radius:14px;text-align:center;background:#121723;border:1px solid #2a3345;font-size:1.6rem;font-weight:900}
 .bigkey.big{grid-column:span 3}
 
-/* Light theme */
-.light{
-  --bg:#f2f3f7;   /* light gray background */
-  --fg:#0b0f19;
-  --card:#ffffff; /* cards stay white */
-  --muted:#44516b;
-}
-
-/* Light theme contrast fixes */
-.light body{ background:#f2f3f7; }
-.light .card{ 
-  background:#ffffff; 
-  border-color:#d9dee8; 
-  box-shadow:0 1px 3px rgba(0,0,0,0.05);
-}
-.light .list{ border-color:#d9dee8; }
-.light .list .rowline{ border-bottom-color:#e1e6f0; }
-.light input,.light select{ background:#ffffff; color:#0b0f19; border-color:#d6dbe7; }
-.light .pill{ background:#f7f8fb; border-color:#d9dee8; }
-.light .bigkey{ background:#f9f9fc; border-color:#d9dee8; }
-.light .imgbox{ background:#f7f8fb; border-color:#d9dee8; }
-.light header{ background:#ffffff; border-bottom-color:#d9dee8; }
-  /* === Checkout visuals (customer + conveyor belt) === */
+/* ===== Checkout visuals (ONE clean version) ===== */
 .checkout-area{
   display:flex; align-items:center; gap:12px;
   padding:10px; border:1px solid #22304a; border-radius:12px;
   background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.05));
 }
-.avatar{ width:72px; height:72px; border-radius:12px; overflow:hidden; border:1px solid #22304a; background:#0e121c; flex:0 0 auto; }
+.avatar{
+  width:72px; height:72px; border-radius:12px; overflow:hidden;
+  border:1px solid #22304a; background:#0e121c; flex:0 0 auto;
+}
 .avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
-
 .belt{
   position:relative; flex:1; height:80px; border-radius:10px; overflow:hidden;
   border:1px solid #22304a; background:#0f1422;
 }
 .belt::before{
   content:""; position:absolute; inset:0;
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(255,255,255,.04) 0 12px,
-    rgba(255,255,255,.02) 12px 24px
-  );
-  animation: beltMove 2.8s linear infinite;
-  pointer-events:none;
+  background: repeating-linear-gradient(-45deg, rgba(255,255,255,.04) 0 12px, rgba(255,255,255,.02) 12px 24px);
+  animation: beltMove 2.8s linear infinite; pointer-events:none;
 }
 @keyframes beltMove{ 0%{ transform: translateX(0) } 100%{ transform: translateX(-48px) } }
-
 #beltItems{ position:absolute; inset:0; }
 .belt-item{
   position:absolute; bottom:10px; width:58px; height:58px;
   display:flex; align-items:center; justify-content:center;
   background:#121723; border:1px solid #2a3345; border-radius:10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.25);
-  font-size:30px; user-select:none;
+  box-shadow:0 2px 6px rgba(0,0,0,.25); font-size:30px; user-select:none;
   animation: slideAcross 6s linear infinite;
 }
 .belt-item .hint{
   position:absolute; top:-18px; left:50%; transform:translateX(-50%);
-  font-size:.70rem; color:#9fb0d1;
-  background:rgba(0,0,0,.35); padding:2px 6px; border-radius:6px;
+  font-size:.70rem; color:#9fb0d1; background:rgba(0,0,0,.35); padding:2px 6px; border-radius:6px;
   border:1px solid #22304a;
 }
 @keyframes slideAcross{
-  0%   { transform:translateX(110%); opacity:.0 }
-  10%  { opacity:1 }
-  90%  { opacity:1 }
-  100% { transform:translateX(-120%); opacity:.0 }
+  0%{ transform:translateX(110%); opacity:0 }
+  10%{ opacity:1 } 90%{ opacity:1 }
+  100%{ transform:translateX(-120%); opacity:0 }
 }
+.register{ background:#0e121c; border:1px solid #2a3345; border-radius:12px; padding:10px; display:grid; gap:8px; }
+.register .display{
+  font-family:ui-monospace, Menlo, Consolas, monospace;
+  background:#0b0f19; border:1px solid #26314a; border-radius:8px;
+  padding:10px; font-size:1.1rem; letter-spacing:2px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.register .kbd{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.kkey{
+  padding:14px 0; text-align:center; border-radius:10px;
+  background:#121723; border:1px solid #2a3345; font-weight:800; font-size:1.1rem;
+  user-select:none; cursor:pointer;
+}
+.kkey.wide{ grid-column:span 3; }
 
-/* light theme tweaks for belt */
+/* Light theme variants */
 .light .checkout-area{ border-color:#e4e9f3; background:#f8f9fc; }
 .light .avatar{ background:#fff; border-color:#e4e9f3; }
 .light .belt{ background:#fff; border-color:#e6ebf5; }
 .light .belt::before{
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(0,0,0,.04) 0 12px,
-    rgba(0,0,0,.02) 12px 24px
-  );
+  background: repeating-linear-gradient(-45deg, rgba(0,0,0,.04) 0 12px, rgba(0,0,0,.02) 12px 24px);
 }
 .light .belt-item{ background:#f4f6fb; border-color:#e1e6f0; }
 .light .belt-item .hint{ background:#eef1f6; border-color:#dfe6f2; color:#6b7a93; }
-/* === H-MART branding bits === */
-.brand{
-  display:flex; align-items:center; gap:10px; margin:0;
-  font-size:1.1rem; letter-spacing:.2px;
-}
+.light .register{ background:#ffffff; border-color:#e1e6f0; }
+.light .register .display{ background:#f7f8fb; border-color:#e1e6f0; }
+.light .kkey{ background:#f4f6fb; border-color:#e1e6f0; }
+
+/* H-MART branding */
+.brand{ display:flex; align-items:center; gap:10px; margin:0; font-size:1.1rem; letter-spacing:.2px; }
 .hmart-badge{
   display:inline-flex; align-items:center; justify-content:center;
-  padding:0 10px;
-  height:28px;
-  border-radius:4px;
-  background:#E6002D;
-  color:#fff;
-  font-weight:900;
-  font-size:.9rem;
+  padding:0 10px; height:28px; border-radius:4px;
+  background:#E6002D; color:#fff; font-weight:900; font-size:.9rem;
   font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-  line-height:1;
-  box-shadow:0 1px 0 rgba(0,0,0,.25) inset, 0 2px 6px rgba(0,0,0,.25);
+  line-height:1; box-shadow:0 1px 0 rgba(0,0,0,.25) inset, 0 2px 6px rgba(0,0,0,.25);
   text-transform:uppercase;
 }
+
 /* optional: make any "red" buttons match the brand red */
 .btn.red{ background:var(--accent); border-color:#b00020 }
 </style>
@@ -198,6 +161,7 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
     </label>
   </div>
 </header>
+
 <main>
   <!-- Learn -->
   <section id="panelLearn" class="panel active">
@@ -224,12 +188,13 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
   <section id="panelQuiz" class="panel">
     <div class="card">
       <h2>Quiz — Register</h2>
-<div class="row" style="margin:6px 0">
-  <div class="chip">Current: <b id="qName">—</b> <span class="muted">(<span id="qCat">—</span>)</span></div>
-  <div class="chip">Target length: <b id="qLen">—</b></div>
-  <div class="chip">Due: <b id="dueCount">0</b></div>
-  <div class="chip">SRS: <b id="srsBadge">OFF</b></div>
-</div>
+      <div class="row" style="margin:6px 0">
+        <div class="chip">Current: <b id="qName">—</b> <span class="muted">(<span id="qCat">—</span>)</span></div>
+        <div class="chip">Target length: <b id="qLen">—</b></div>
+        <div class="chip">Due: <b id="dueCount">0</b></div>
+        <!-- FIX: unique ID for quiz badge -->
+        <div class="chip">SRS: <b id="srsBadgeQuiz">OFF</b></div>
+      </div>
       <div class="row">
         <input id="qInput" inputmode="numeric" placeholder="Enter PLU…" maxlength="5">
         <button class="btn" id="qSubmit">Enter</button>
@@ -239,60 +204,102 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
     </div>
   </section>
 
-<!-- Checkout -->
-<section id="panelCheckout" class="panel">
-  <div class="card">
-    <h2>Checkout Game — Simulated Register</h2>
+  <!-- Checkout -->
+  <section id="panelCheckout" class="panel">
+    <div class="card">
+      <h2>Checkout Game — Simulated Register</h2>
 
-    <div class="row">
-      <button class="btn green" id="cgStart">Start</button>
-      <select id="cgPreset">
-        <option value="rookie">Rookie</option>
-        <option value="cashier" selected>Cashier</option>
-        <option value="speed">Speed</option>
-        <option value="expert">Expert</option>
-      </select>
-      <select id="cgTimer">
-        <option value="0">Timer Off</option>
-        <option value="30">30s</option>
-        <option value="20">20s</option>
-        <option value="10">10s</option>
-        <option value="5">5s</option>
-      </select>
-    </div>
-
-    <label class="chip" style="margin-top:6px">
-      <input type="checkbox" id="showCatHint"> Show Category Hint (next item)
-    </label>
-
-    <!-- Visuals: avatar + conveyor belt -->
-    <div id="checkoutVisuals" class="checkout-area" style="margin-top:8px">
-      <div id="customerAvatar" class="avatar"></div>
-      <div class="belt">
-        <div id="beltItems"></div>
+      <div class="row">
+        <button class="btn green" id="cgStart">Start</button>
+        <select id="cgPreset">
+          <option value="rookie">Rookie</option>
+          <option value="cashier" selected>Cashier</option>
+          <option value="speed">Speed</option>
+          <option value="expert">Expert</option>
+        </select>
+        <select id="cgTimer">
+          <option value="0">Timer Off</option>
+          <option value="30">30s</option>
+          <option value="20">20s</option>
+          <option value="10">10s</option>
+          <option value="5">5s</option>
+        </select>
       </div>
-    </div>
 
-    <div class="row" style="margin-top:6px">
-      <div class="chip">Customer <b id="cgCust">0</b>/<b id="cgCustTotal">0</b></div>
-      <div class="chip">Items <b id="cgItem">0</b>/<b id="cgItemTotal">0</b></div>
-      <div class="chip">Streak <b id="cgStreak">0</b></div>
-    </div>
+      <label class="chip" style="margin-top:6px">
+        <input type="checkbox" id="showCatHint"> Show Category Hint (next item)
+      </label>
 
-    <div class="row" style="margin:8px 0">
-      <div class="imgbox"><img id="cgImg" style="display:none"><span class="muted small" id="cgNoImg">No picture</span></div>
-      <div style="flex:1">
-        <div><b id="cgName">—</b> <span class="muted">(<span id="cgCat">—</span>)</span></div>
-        <div class="row" style="margin-top:8px">
-          <input id="cgInput" inputmode="numeric" placeholder="Enter PLU…" maxlength="5">
-          <button class="btn" id="cgEnter">Enter</button>
-          <button class="btn" id="cgSkip">Skip</button>
+      <!-- AVATAR + BELT + REGISTER -->
+      <div class="checkout-area" style="margin-top:8px">
+        <!-- Avatar -->
+        <div class="avatar" id="customerAvatar">
+          <span class="muted small">Customer</span>
         </div>
-        <div id="cgFeedback" class="small" style="margin-top:6px"></div>
+
+        <!-- Conveyor belt -->
+        <div class="belt">
+          <div id="beltItems"></div>
+        </div>
+
+        <!-- Register -->
+        <div class="register">
+          <div class="display">
+            <span class="muted small">PLU:</span>
+            <span id="regDigits">—</span>
+          </div>
+          <div class="kbd" id="regPad">
+            <div class="kkey" data-key="1">1</div>
+            <div class="kkey" data-key="2">2</div>
+            <div class="kkey" data-key="3">3</div>
+            <div class="kkey" data-key="4">4</div>
+            <div class="kkey" data-key="5">5</div>
+            <div class="kkey" data-key="6">6</div>
+            <div class="kkey" data-key="7">7</div>
+            <div class="kkey" data-key="8">8</div>
+            <div class="kkey" data-key="9">9</div>
+            <div class="kkey" data-key="0">0</div>
+            <div class="kkey" data-key="back">⌫</div>
+            <div class="kkey" data-key="clear">Clear</div>
+            <div class="kkey wide" data-key="enter">Enter</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:6px">
+        <div class="chip">Customer <b id="cgCust">0</b>/<b id="cgCustTotal">0</b></div>
+        <div class="chip">Items <b id="cgItem">0</b>/<b id="cgItemTotal">0</b></div>
+        <div class="chip">Streak <b id="cgStreak">0</b></div>
+      </div>
+
+      <div class="row" style="margin:8px 0">
+        <div class="imgbox"><img id="cgImg" style="display:none"><span class="muted small" id="cgNoImg">No picture</span></div>
+        <div style="flex:1">
+          <div><b id="cgName">—</b> <span class="muted">(<span id="cgCat">—</span>)</span></div>
+          <div class="row" style="margin-top:8px">
+            <input id="cgInput" inputmode="numeric" placeholder="Enter PLU…" maxlength="5">
+            <button class="btn" id="cgEnter">Enter</button>
+            <button class="btn" id="cgSkip">Skip</button>
+          </div>
+          <div id="cgFeedback" class="small" style="margin-top:6px"></div>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+
+  <!-- Browse (added so the tab works) -->
+  <section id="panelBrowse" class="panel">
+    <div class="card">
+      <h2>Browse</h2>
+      <div class="row" style="margin:6px 0">
+        <input id="searchBox" placeholder="Search items…">
+        <select id="catFilter"></select>
+        <label class="chip"><input type="checkbox" id="favOnly"> Favorites only</label>
+        <span class="muted small" id="itemCount"></span>
+      </div>
+      <div id="browseList" class="list"></div>
+    </div>
+  </section>
 
   <!-- Big keypad tab -->
   <section id="panelKeypad" class="panel">
@@ -314,16 +321,16 @@ code,.code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b0f19;
   </section>
 
   <!-- Stats tab -->
-<section id="panelStats" class="panel">
-  <div class="card">
-    <h2>Stats</h2>
-    <div id="stats"></div>
-    <div class="row" style="margin-top:10px; gap:8px">
-      <button class="btn" id="exportData">💾 Save Backup</button>
-      <button class="btn" id="shareStats">📤 Share Stats</button>
+  <section id="panelStats" class="panel">
+    <div class="card">
+      <h2>Stats</h2>
+      <div id="stats"></div>
+      <div class="row" style="margin-top:10px; gap:8px">
+        <button class="btn" id="exportData">💾 Save Backup</button>
+        <button class="btn" id="shareStats">📤 Share Stats</button>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 </main>
 
 <!-- Bottom tabs -->
@@ -565,11 +572,10 @@ const store = {
   get(k,f){ try{ return JSON.parse(localStorage.getItem(k)) ?? f } catch{ return f } },
   del(k){ localStorage.removeItem(k) }
 };
-  // Format helpers for numbers, percentages, and pretty stats text
+
+// --- Format helpers / pretty stats text ---
 function fmt(n){ return Number(n||0).toLocaleString(); }
-function accuracyPct(stats){
-  return stats.seen ? Math.round(100 * stats.correct / stats.seen) : 0;
-}
+function accuracyPct(stats){ return stats.seen ? Math.round(100 * stats.correct / stats.seen) : 0; }
 function prettyStatsText(){
   const acc = accuracyPct(STATS);
   const lines = [
@@ -583,16 +589,14 @@ function prettyStatsText(){
   ];
   return lines.join("\n");
 }
+
 // --- Feedback (Haptics + Sound) ---
 function giveFeedback(type="light") {
-  // Haptics (vibration if supported)
   if ($("#fxHaptics")?.checked && navigator.vibrate) {
     if (type === "success") navigator.vibrate([30]);
     else if (type === "error") navigator.vibrate([60, 40, 60]);
     else navigator.vibrate(20);
   }
-
-  // Optional click sound
   if ($("#fxSound")?.checked) {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
@@ -606,20 +610,19 @@ function giveFeedback(type="light") {
     osc.stop(ctx.currentTime + 0.15);
   }
 }
-// Title Case (preserves internal apostrophes like D’Anjou)
+
+// --- Title Case for names/categories ---
 function toTitle(s){
   return s.toLowerCase().replace(/([\p{L}\p{N}]+)/gu, w=>{
     return w.charAt(0).toUpperCase()+w.slice(1);
   }).replace(/\bD’anjou\b/giu,'D’Anjou').replace(/\bD’anjour\b/giu,'D’Anjour');
 }
 
-// Load DATA: prefer localStorage overrides; else embed seed
+// ---------- Load DATA from seed once ----------
 let DATA = store.get('DATA_BAKED', null);
 if(!DATA){
   const raw = $("#seed").textContent.trim();
-  DATA = JSON.parse(raw);
-  // Normalize names/categories for display/search
-  DATA = DATA.map(x=>({
+  DATA = JSON.parse(raw).map(x=>({
     ...x,
     name: toTitle(String(x.name || "")),
     code: String(x.code || ""),
@@ -630,27 +633,27 @@ if(!DATA){
   store.save('DATA_BAKED', DATA);
 }
 
-// --- Item count helper (MUST exist whether DATA came from localStorage or seed)
+// Item counter (filtered/total)
 const TOTAL_ITEMS = DATA.length;
 function updateItemCount(filteredCount = TOTAL_ITEMS){
   const c = document.getElementById('itemCount');
   if (c) c.textContent = `(${filteredCount}/${TOTAL_ITEMS})`;
 }
 
-// Favorites & performance
+// Favorites & Stats
 const FAV = new Set(store.get('FAV', []));
 function saveFav(){ store.save('FAV', [...FAV]); }
 const STATS = store.get('STATS', {seen:0,correct:0,streak:0,bestStreak:0});
 function saveStats(){ store.save('STATS', STATS); }
 
-// Theme
+// Theme toggle
 $("#themeToggle").onclick = ()=>{
   document.body.classList.toggle('light');
   localStorage.setItem('THEME', document.body.classList.contains('light') ? 'light':'dark');
 };
 if(localStorage.getItem('THEME')==='light') document.body.classList.add('light');
 
-// --------------- Tabs ----------------
+// Tabs
 $$('.tabbtn').forEach(b=>b.onclick=()=>{
   $$('.tabbtn').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
@@ -675,26 +678,20 @@ $("#learnShow").onclick = ()=>{ $("#learnCode").textContent = DATA[idx].code; $(
 $("#learnPic").onclick = ()=>{
   const url = prompt("Paste image URL for: "+DATA[idx].name);
   if(!url) return;
-  DATA[idx].image = url;
-  store.save('DATA_BAKED', DATA);
-  showLearn();
+  DATA[idx].image = url; store.save('DATA_BAKED', DATA); showLearn();
 };
 showLearn();
-  // --------- Spaced Repetition (SRS) ----------
-const SRS = store.get('SRS', {}); // keyed by code -> {ef, reps, intervalDays, dueTs}
-function saveSRS(){ store.save('SRS', SRS); }
-function nowTs(){ return Date.now(); }
-function days(n){ return n*24*60*60*1000; }
 
-// Get/create record for a code
+// --------- Spaced Repetition (SRS) ----------
+const SRS = store.get('SRS', {}); // code -> {ef, reps, intervalDays, dueTs}
+function saveSRS(){ store.save('SRS', SRS); }
+const nowTs = ()=>Date.now();
+const days = n=>n*24*60*60*1000;
 function srsGet(code){
-  if(!SRS[code]) SRS[code] = { ef:2.5, reps:0, intervalDays:0, dueTs: nowTs() }; // due now
+  if(!SRS[code]) SRS[code] = { ef:2.5, reps:0, intervalDays:0, dueTs: nowTs() };
   return SRS[code];
 }
-
-// SM-2 inspired, simplified:
-// - correct: reps+1; interval: 1d, then 6d, then round(prev*ef); ef += 0.1 (cap 2.8)
-// - wrong:   reps=0;  interval=1d; ef -= 0.3 (floor 1.3)
+// SM-2 inspired, simplified
 function srsUpdate(code, correct){
   const r = srsGet(code);
   if(correct){
@@ -704,40 +701,23 @@ function srsUpdate(code, correct){
     else r.intervalDays = Math.round(Math.max(1, r.intervalDays * r.ef));
     r.ef = Math.min(2.8, r.ef + 0.1);
   } else {
-    r.reps = 0;
-    r.intervalDays = 1;
-    r.ef = Math.max(1.3, r.ef - 0.3);
+    r.reps = 0; r.intervalDays = 1; r.ef = Math.max(1.3, r.ef - 0.3);
   }
   r.dueTs = nowTs() + days(r.intervalDays);
   saveSRS();
 }
-
-// All items that are due now (or overdue)
 function srsDueItems(){
-  const t = nowTs();
-  const due = [];
-  for(const it of DATA){
-    const rec = srsGet(it.code);
-    if(rec.dueTs <= t) due.push(it);
-  }
+  const t = nowTs(); const due=[];
+  for(const it of DATA){ if(srsGet(it.code).dueTs <= t) due.push(it); }
   return due;
 }
-
-// Count badge updater
 function updateDueBadge(){
   const el = document.getElementById('dueCount');
-  if(!el) return;
-  el.textContent = srsDueItems().length;
-}
-// --------------- Quiz ----------------
-function shuffle(a){
-  for(let i=a.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [a[i],a[j]]=[a[j],a[i]];
-  }
-  return a;
+  if(el) el.textContent = srsDueItems().length;
 }
 
+// --------------- Quiz ----------------
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a; }
 function buildQuizOrder(){
   if ($("#srsMode")?.checked){
     const due = srsDueItems();
@@ -745,68 +725,30 @@ function buildQuizOrder(){
   }
   return shuffle([...DATA]);
 }
-
 let q = { i: 0, order: buildQuizOrder() };
-
 function showQuiz(){
-  if (q.i >= q.order.length){
-    q.i = 0;
-    q.order = buildQuizOrder();
-  }
+  if (q.i >= q.order.length){ q.i = 0; q.order = buildQuizOrder(); }
   const it = q.order[q.i % q.order.length];
-  $("#qName").textContent = it.name;
-  $("#qCat").textContent = it.category;
-  $("#qLen").textContent = it.code.length;
-  $("#qInput").value = "";
-  $("#qFeedback").textContent = "";
+  $("#qName").textContent = it.name; $("#qCat").textContent = it.category; $("#qLen").textContent = it.code.length;
+  $("#qInput").value = ""; $("#qFeedback").textContent = "";
 }
-
 function submitQuiz(){
   const it  = q.order[q.i % q.order.length];
   const val = $("#qInput").value.trim();
   const ok  = (val === it.code);
-
   $("#qFeedback").innerHTML = ok ? `✅ Correct: ${it.code}` : `❌ ${val||'—'} → ${it.code}`;
-
-  // SRS + badge
-  srsUpdate(it.code, ok);
-  updateDueBadge();
-
-  if (ok) giveFeedback?.("success"); else giveFeedback?.("error");
-
-  STATS.seen++;
-  if (ok){
-    STATS.correct++;
-    STATS.streak++;
-    STATS.bestStreak = Math.max(STATS.bestStreak, STATS.streak);
-  } else {
-    STATS.streak = 0;
-  }
-  saveStats();
-  renderStats();
-
-  q.i++;
-  showQuiz();
+  srsUpdate(it.code, ok); updateDueBadge();
+  if (ok) giveFeedback("success"); else giveFeedback("error");
+  STATS.seen++; if (ok){ STATS.correct++; STATS.streak++; STATS.bestStreak=Math.max(STATS.bestStreak, STATS.streak); } else { STATS.streak=0; }
+  saveStats(); renderStats();
+  q.i++; showQuiz();
 }
-
 $("#qSubmit").onclick = submitQuiz;
 $("#qNext").onclick   = ()=>{ q.i++; showQuiz(); };
 $("#qInput").addEventListener('keydown', e=>{ if(e.key==='Enter') submitQuiz(); });
+showQuiz(); updateDueBadge();
 
-showQuiz();
-updateDueBadge(); // ← make the “Due” chip correct on first load
- 
-
-// Initialize badge state on load
-// --------------- Checkout Game ----------------
-let CG = null;
-const PRESETS = {
-  rookie:{customers:5, maxItems:3},
-  cashier:{customers:8, maxItems:6},
-  speed:{customers:12, maxItems:8},
-  expert:{customers:15, maxItems:12}
-};
-  // === Customer avatars (PNG files you uploaded to /avatars) ===
+// === Customer avatars (PNG files you uploaded to /avatars) ===
 const AVATARS = [
   'avatars/avatar_01.png',
   'avatars/avatar_02.png',
@@ -820,42 +762,144 @@ const AVATARS = [
   'avatars/avatar_10.png'
 ];
 
-// Simple category → emoji icon (fallback) for belt preview
-const CAT_ICON = {
-  "Apple":"🍎","Pear":"🍐","Melon":"🍈","Watermelon":"🍉","Persimmon":"🧡",
-  "Quince":"🍏","Banana":"🍌","Plantain":"🍌","Peach":"🍑","Nectarine":"🍑",
-  "Avocado":"🥑","Mango":"🥭","Coconut":"🥥","Papaya":"🧡","Pomegranate":"🔴",
-  "Tropical Fruit":"🥭","Pineapple":"🍍","Citrus":"🍋","Orange":"🍊","Mandarin":"🍊",
-  "Plum":"🟣","Grapefruit":"🍊","Pomelo":"🍊","Grape":"🍇",
-  "Herbs":"🌿","Herbs / Aromatics":"🌿","Leafy Greens":"🥬","Root Vegetable":"🥕",
-  "Onion":"🧅","Garlic":"🧄","Potato":"🥔","Yam":"🍠","Cabbage":"🥬","Brassica":"🥦",
-  "Lettuce":"🥬","Stalks":"🥬","Asparagus":"🥬","Corn":"🌽","Beans":"🫘",
-  "Tomato":"🍅","Chayote":"🥗","Pepper":"🫑","Pods":"🫛","Flowers / Special Veggies":"🌺",
-  "Pandan":"🌿","Pandan Leaf":"🌿","Papaya":"🧡"
-};
-function iconFor(it){ return CAT_ICON[it.category] || "🛒"; }
+function setRandomAvatar(){
+  const avatar = AVATARS[Math.floor(Math.random()*AVATARS.length)];
+  const el = document.getElementById('customerAvatar');
+  if (el) el.innerHTML = `<img src="${avatar}" alt="customer" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`;
+}
 
 // Preload avatars to avoid flashes
 (function preloadAvatars(){
   AVATARS.forEach(src=>{ const i=new Image(); i.src=src; });
 })();
+
+// Category → emoji icons for belt preview
+const CAT_ICON = {
+  // Fruits
+  "Apple":"🍎","Pear":"🍐","Quince":"🍏","Banana":"🍌","Plantain":"🍌","Mango":"🥭","Avocado":"🥑",
+  "Peach":"🍑","Nectarine":"🍑","Plum":"🟣","Grape":"🍇","Pomegranate":"🔴","Persimmon":"🧡",
+  "Papaya":"🧡","Pineapple":"🍍","Coconut":"🥥","Orange":"🍊","Mandarin":"🍊","Grapefruit":"🍊",
+  "Pomelo":"🍊","Melon":"🍈","Watermelon":"🍉","Tropical Fruit":"🥭",
+
+  // Vegetables
+  "Tomato":"🍅","Onion":"🧅","Garlic":"🧄","Potato":"🥔","Yam":"🍠","Carrot":"🥕","Cabbage":"🥬",
+  "Brassica":"🥦","Lettuce":"🥬","Leafy Greens":"🥬","Stalks":"🥬","Asparagus":"🥬","Corn":"🌽",
+  "Beans":"🫘","Pods":"🫛","Pepper":"🫑","Chayote":"🥗","Flowers / Special Veggies":"🌺",
+
+  // Herbs
+  "Herbs":"🌿","Herbs / Aromatics":"🌿","Pandan":"🌿","Pandan Leaf":"🌿",
+
+  // Fallback
+  "Default":"🛒"
+};
+
+// Safe lookup
+function iconFor(it){
+  return CAT_ICON[it.category] || CAT_ICON["Default"];
+}
+
+// Build the belt from a queue slice
+function renderBelt(queue, showHint=false){
+  const belt = document.getElementById('beltItems');
+  if(!belt) return;
+  belt.innerHTML = '';
+
+  // show up to the next 6 items
+  const upcoming = queue.slice(0, 6);
+  upcoming.forEach((it, i)=>{
+    const div = document.createElement('div');
+    div.className = 'belt-item';
+    // first item gets an icon (and optional label); others are boxes
+    div.textContent = (i === 0 && showHint) ? iconFor(it) : '📦';
+
+    if (i === 0 && showHint) {
+      const tag = document.createElement('div');
+      tag.className = 'hint';
+      tag.textContent = it.category;
+      div.appendChild(tag);
+    }
+    // a touch of variation
+    const lane = i % 2 ? 10 : 20;
+    const delay = i * 0.35;
+    div.style.bottom = `${lane}px`;
+    div.style.animationDelay = `${delay}s`;
+
+    belt.appendChild(div);
+  });
+}
+
+// When an item is completed, slide the belt forward visually
+function shiftBelt(){
+  const belt = document.getElementById('beltItems');
+  if(!belt || !belt.firstElementChild) return;
+  belt.firstElementChild.remove(); // remove the front-most item
+}
+<!-- REPLACE your Checkout Game JS with this -->
+<script>
+// --------------- Checkout Game ----------------
+let CG = null;
+const PRESETS = {
+  rookie:{customers:5, maxItems:3},
+  cashier:{customers:8, maxItems:6},
+  speed:{customers:12, maxItems:8},
+  expert:{customers:15, maxItems:12}
+};
+
+// === Timer helpers (global) ===
+let cgTimerId = null;
+let cgTimerToken = 0;
+
+function clearCgTimer(targetSel){
+  if (cgTimerId !== null){
+    clearInterval(cgTimerId);
+    cgTimerId = null;
+  }
+  if (targetSel){
+    const t = document.querySelector(targetSel);
+    if (t) t.textContent = ""; // clear old display
+  }
+}
+
+// Bind the hint toggle ONCE (outside start)
+document.getElementById('showCatHint')?.addEventListener('change', ()=>{
+  if (!CG || !CG.queue) return;
+  renderBelt(CG.queue.slice(CG.item), document.getElementById('showCatHint').checked);
+});
+
 function startCG(){
   const p = PRESETS[$("#cgPreset").value];
   const timer = parseInt($("#cgTimer").value,10)||0;
-  CG = {cust:0, custTotal:p.customers, item:0, itemTotal:0, timer, streak:0, queue:[]};
+  CG = { cust:0, custTotal:p.customers, item:0, itemTotal:0, timer, streak:0, queue:[] };
+
+  // reset UI counters
+  $("#cgStreak").textContent = 0;
+  $("#cgCust").textContent = 0;
+  $("#cgCustTotal").textContent = CG.custTotal;
+  $("#cgFeedback").textContent = "";
+  $("#cgName").textContent = "—";
+  $("#cgCat").textContent = "—";
+  const belt = document.getElementById('beltItems'); if (belt) belt.innerHTML = '';
+  setRandomAvatar();
+
   nextCustomer();
 }
+
 function nextCustomer(){
-  CG.cust++; 
-  if(CG.cust > CG.custTotal){ 
-    $("#cgFeedback").textContent = "🏁 Done!"; 
-    return; 
+  // advance to next customer, or finish
+  CG.cust++;
+  if (CG.cust > CG.custTotal){
+    $("#cgFeedback").textContent = "🏁 Done!";
+    const belt = document.getElementById('beltItems'); if (belt) belt.innerHTML = '';
+    const av   = document.getElementById('customerAvatar'); if (av) av.innerHTML = '<span class="muted small">Customer</span>';
+    clearCgTimer("#cgFeedback");
+    return;
   }
 
+  // how many items this customer has
   const maxItems = PRESETS[$("#cgPreset").value].maxItems;
   const n = 1 + Math.floor(Math.random() * maxItems);
 
-  // Prefer SRS-due items when SRS is ON
+  // build pool (prefer SRS-due if ON)
   let pool;
   if ($("#srsMode")?.checked) {
     const due = srsDueItems();
@@ -864,89 +908,163 @@ function nextCustomer(){
     pool = [...DATA];
   }
 
-  CG.item = 0; 
-  CG.itemTotal = n; 
+  // queue for this customer
+  CG.item = 0;
+  CG.itemTotal = n;
   CG.queue = shuffle(pool).slice(0, n);
 
-  $("#cgCust").textContent = CG.cust; 
+  // counters
+  $("#cgCust").textContent = CG.cust;
   $("#cgCustTotal").textContent = CG.custTotal;
+
+  // visuals
+  setRandomAvatar();
+  renderBelt(
+    CG.queue.slice(CG.item),
+    document.getElementById('showCatHint')?.checked
+  );
+
   nextItemCG();
 }
+
 function nextItemCG(){
-  if(CG.item>=CG.itemTotal){ nextCustomer(); return; }
+  // stop any previous item's timer display to avoid flicker
+  clearCgTimer("#cgFeedback");
+
+  if (CG.item >= CG.itemTotal){
+    nextCustomer();
+    return;
+  }
+
   const it = CG.queue[CG.item];
-  $("#cgName").textContent = it.name; $("#cgCat").textContent = it.category;
-  if(it.image){ $("#cgImg").src=it.image; $("#cgImg").style.display='block'; $("#cgNoImg").style.display='none'; }
-  else { $("#cgImg").style.display='none'; $("#cgNoImg").style.display='inline'; }
-  $("#cgItem").textContent = CG.item+1; $("#cgItemTotal").textContent = CG.itemTotal;
-  $("#cgInput").value=""; $("#cgFeedback").textContent="";
-  if(CG.timer>0){ startTimer(CG.timer, "#cgFeedback"); }
+
+  // UI: name/category + image
+  $("#cgName").textContent = it.name;
+  $("#cgCat").textContent  = it.category;
+
+  if (it.image){
+    $("#cgImg").src = it.image;
+    $("#cgImg").style.display = 'block';
+    $("#cgNoImg").style.display = 'none';
+  } else {
+    $("#cgImg").style.display = 'none';
+    $("#cgNoImg").style.display = 'inline';
+  }
+
+  // counters + input
+  $("#cgItem").textContent      = CG.item + 1;
+  $("#cgItemTotal").textContent = CG.itemTotal;
+  $("#cgInput").value = "";
+  $("#cgFeedback").textContent = "";
+
+  // start a fresh timer for THIS item only
+  if (CG.timer > 0){
+    startTimer(CG.timer, "#cgFeedback");
+  }
+
+  // refresh belt preview (category hint for first item if toggled)
+  renderBelt(
+    CG.queue.slice(CG.item),
+    document.getElementById('showCatHint')?.checked
+  );
 }
 function startTimer(sec, targetSel){
-  const target = $(targetSel); const start = Date.now(); const id = setInterval(()=>{
-    const left = Math.max(0, sec - Math.floor((Date.now()-start)/1000));
+  const target = document.querySelector(targetSel);
+  if (!target) return;
+
+  // kill any previous timer & clear text first
+  clearCgTimer(targetSel);
+
+  // new token for this timer run
+  const myToken = ++cgTimerToken;
+  const start = Date.now();
+
+  const tick = () => {
+    // bail if a newer timer has started
+    if (myToken !== cgTimerToken) return;
+
+    const left = Math.max(0, sec - Math.floor((Date.now() - start)/1000));
     target.textContent = `⏱ ${left}s`;
-    if(left<=0){ clearInterval(id); target.textContent = "⏱ 0s — time!"; CG.streak=0; nextWrong(); }
-  }, 200);
+
+    if (left <= 0){
+      clearCgTimer(targetSel);
+      target.textContent = "⏱ 0s — time!";
+      CG.streak = 0;
+      nextWrong(); // your existing handler
+    }
+  };
+
+  tick(); // draw immediately
+  cgTimerId = setInterval(tick, 200);
 }
 function enterCG(){
   const it  = CG.queue[CG.item];
   const val = $("#cgInput").value.trim();
   const ok  = (val === it.code);
 
-  $("#cgFeedback").textContent = ok ? `✅ ${it.code} — +1 streak!` 
-                                    : `❌ ${val||'—'} → ${it.code}`;
+  $("#cgFeedback").textContent = ok
+    ? `✅ ${it.code} — +1 streak!`
+    : `❌ ${val||'—'} → ${it.code}`;
 
-  // SRS + badge
+  // update SRS + due badge
   srsUpdate(it.code, ok);
   updateDueBadge();
 
-  // Haptics/sound
+  // haptics/sound
   if (ok) giveFeedback("success"); else giveFeedback("error");
 
-  // Stats
+  // stats
   STATS.seen++;
-  if (ok){ STATS.correct++; CG.streak++; } 
-  else { CG.streak = 0; }
+  if (ok){ STATS.correct++; CG.streak++; } else { CG.streak = 0; }
   STATS.bestStreak = Math.max(STATS.bestStreak, CG.streak);
-  saveStats(); 
-  renderStats();
+  saveStats(); renderStats();
 
-  CG.item++; 
-  setTimeout(nextItemCG, 400);
+  // kill this item's timer immediately to prevent overlap with the next one
+  clearCgTimer("#cgFeedback");
+
+  // move belt forward and advance
+  shiftBelt();
+  CG.item++;
+  setTimeout(nextItemCG, 300);
 }
-function skipCG(){ CG.streak=0; nextWrong(); }
-function nextWrong(){ CG.item++; setTimeout(nextItemCG, 200); }
+  function skipCG(){
+  // user skipped the item: reset streak and stop this item's timer
+  CG.streak = 0;
+  clearCgTimer("#cgFeedback");
+
+  // move the belt forward visually
+  shiftBelt();
+
+  // advance to the next item
+  nextWrong();
+}
+function nextWrong(){
+  CG.item++;
+  setTimeout(nextItemCG, 200);
+}
+
+// Handlers
 $("#cgStart").onclick = startCG;
 $("#cgEnter").onclick = enterCG;
 $("#cgSkip").onclick = skipCG;
 $("#cgInput").addEventListener('keydown', e=>{ if(e.key==='Enter') enterCG(); });
 
-  // --------------- SRS Badge Sync ----------------
+// --------------- SRS Badge Sync ----------------
 function updateSrsBadge() {
   const badge = document.getElementById("srsBadge");
   if (!badge) return;
   if (document.getElementById("srsMode").checked) {
-    badge.textContent = "ON";
-    badge.classList.remove("OFF");
-    badge.classList.add("ON");
+    badge.textContent = "ON"; badge.classList.remove("OFF"); badge.classList.add("ON");
   } else {
-    badge.textContent = "OFF";
-    badge.classList.remove("ON");
-    badge.classList.add("OFF");
+    badge.textContent = "OFF"; badge.classList.remove("ON"); badge.classList.add("OFF");
   }
 }
-
-// Hook into checkbox
-// ---- SRS Toggle (badge + quiz rebuild + due count) ----
 document.getElementById("srsMode")?.addEventListener("change", ()=>{
   updateSrsBadge();
   q = { i: 0, order: buildQuizOrder() };
   showQuiz();
   updateDueBadge();
 });
-
-// Run once on load
 updateSrsBadge();
 
 // --------------- Browse / Search + Favorites ----------------
@@ -995,131 +1113,63 @@ function buildCatFilter(){
 $("#searchBox").oninput = renderBrowse;
 $("#catFilter").onchange = renderBrowse;
 $("#favOnly").onchange = renderBrowse;
-buildCatFilter();
-renderBrowse();
-updateItemCount(); // initial (e.g. 168/168)
+buildCatFilter(); renderBrowse(); updateItemCount();
 
 // --------------- Big Keypad ----------------
-// number keys:
 $$('.bigkey').forEach(k=>{
   const v = k.textContent.trim();
-  if(/^\d$/.test(v)) k.onclick = ()=>{
-    $("#bkInput").value += v;
-    giveFeedback("light"); // ADD (tiny tap feedback)
-  };
+  if(/^\d$/.test(v)) k.onclick = ()=>{ $("#bkInput").value += v; giveFeedback("light"); };
 });
-
-// enter:
 $("#bkEnter").onclick = ()=>{
   const code = $("#bkInput").value.trim();
   const hit = DATA.find(d=>d.code===code);
   $("#bkFeedback").textContent = hit ? `✅ ${hit.name} (${hit.category})` : `❌ Not found`;
-
-  // ADD:
   if (hit) giveFeedback("success"); else giveFeedback("error");
 };
+$("#bkClear").onclick = ()=>{ $("#bkInput").value=""; $("#bkFeedback").textContent=""; giveFeedback("light"); };
 
-// clear:
-$("#bkClear").onclick = ()=>{
-  $("#bkInput").value="";
-  $("#bkFeedback").textContent="";
-  giveFeedback("light"); // ADD
-};
 // --------------- Stats ----------------
 function renderStats(){
   const acc = accuracyPct(STATS);
   $("#stats").innerHTML = `
     <div class="row" style="align-items:flex-end; gap:12px">
-      <div class="card" style="flex:1; padding:10px">
-        <div class="muted small">Seen</div>
-        <div style="font-size:1.4rem;font-weight:700">${fmt(STATS.seen)}</div>
-      </div>
-      <div class="card" style="flex:1; padding:10px">
-        <div class="muted small">Correct</div>
-        <div style="font-size:1.4rem;font-weight:700">${fmt(STATS.correct)}</div>
-      </div>
-      <div class="card" style="flex:1; padding:10px">
-        <div class="muted small">Accuracy</div>
-        <div style="font-size:1.4rem;font-weight:700">${acc}%</div>
-      </div>
-      <div class="card" style="flex:1; padding:10px">
-        <div class="muted small">Streak</div>
-        <div style="font-size:1.4rem;font-weight:700">${fmt(STATS.streak)}</div>
-      </div>
-      <div class="card" style="flex:1; padding:10px">
-        <div class="muted small">Best</div>
-        <div style="font-size:1.4rem;font-weight:700">${fmt(STATS.bestStreak)}</div>
-      </div>
-    </div>
-  `;
+      <div class="card" style="flex:1; padding:10px"><div class="muted small">Seen</div><div style="font-size:1.4rem;font-weight:700">${fmt(STATS.seen)}</div></div>
+      <div class="card" style="flex:1; padding:10px"><div class="muted small">Correct</div><div style="font-size:1.4rem;font-weight:700">${fmt(STATS.correct)}</div></div>
+      <div class="card" style="flex:1; padding:10px"><div class="muted small">Accuracy</div><div style="font-size:1.4rem;font-weight:700">${acc}%</div></div>
+      <div class="card" style="flex:1; padding:10px"><div class="muted small">Streak</div><div style="font-size:1.4rem;font-weight:700">${fmt(STATS.streak)}</div></div>
+      <div class="card" style="flex:1; padding:10px"><div class="muted small">Best</div><div style="font-size:1.4rem;font-weight:700">${fmt(STATS.bestStreak)}</div></div>
+    </div>`;
 }
 renderStats();
+
 // ---------- Export / Share ----------
 function buildBackupPayload(){
-  return {
-    when: new Date().toISOString(),
-    version: 1,
-    data: DATA,        // full PLU dataset
-    fav: [...FAV],     // starred codes
-    stats: STATS       // seen/correct/streaks
-  };
+  return { when: new Date().toISOString(), version: 1, data: DATA, fav: [...FAV], stats: STATS };
 }
-
-// 💾 Save Backup — full data as JSON file
 $("#exportData")?.addEventListener('click', ()=>{
   const blob = new Blob([JSON.stringify(buildBackupPayload(), null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'plu_trainer_backup.json';
-  a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plu_trainer_backup.json'; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
 });
-
-// 📤 Share Stats — pretty text + tiny JSON (with fallbacks)
 $("#shareStats")?.addEventListener('click', async ()=>{
   const text = prettyStatsText();
-  const json = JSON.stringify({
-    when: new Date().toISOString(),
-    version: 1,
-    stats: STATS,
-    accuracy: accuracyPct(STATS) + "%"
-  }, null, 2);
-
+  const json = JSON.stringify({ when:new Date().toISOString(), version:1, stats:STATS, accuracy: accuracyPct(STATS)+"%" }, null, 2);
   const file = new File([json], 'plu_trainer_stats.json', {type:'application/json'});
-
-  // Try Share Sheet with text + file
   try {
     if (navigator.canShare && navigator.canShare({ files:[file] })) {
-      await navigator.share({ title:'PLU Trainer Stats', text, files:[file] });
-      return;
+      await navigator.share({ title:'PLU Trainer Stats', text, files:[file] }); return;
     }
-  } catch(e){ /* user canceled */ }
-
-  // Try Share Sheet with text only
+  } catch(e){}
   try {
-    if (navigator.share) {
-      await navigator.share({ title:'PLU Trainer Stats', text });
-      return;
-    }
-  } catch(e){ /* fall through */ }
-
-  // Fallback #1: copy text
-  try {
-    await navigator.clipboard.writeText(text);
-    alert("Stats copied to clipboard. Paste into Messages/Email.");
-  } catch(e) {
-    // Fallback #2: download .txt
-    const blob = new Blob([text], {type:'text/plain'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'plu_trainer_stats.txt';
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
-  }
+    if (navigator.share) { await navigator.share({ title:'PLU Trainer Stats', text }); return; }
+  } catch(e){}
+  try { await navigator.clipboard.writeText(text); alert("Stats copied to clipboard. Paste into Messages/Email."); }
+  catch(e){ const blob = new Blob([text], {type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='plu_trainer_stats.txt'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
 });
+
 // --- First-time onboarding tip
 if (!localStorage.getItem('ONBOARDED')) {
-alert('Tip: Use Browse to ⭐ favorite tricky items, then practice in Quiz or Checkout.');
+  alert('Tip: Use Browse to ⭐ favorite tricky items, then practice in Quiz or Checkout.');
   localStorage.setItem('ONBOARDED','1');
 }
 </script>
