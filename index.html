@@ -69,6 +69,28 @@ main{display:grid;grid-template-columns:1fr;gap:10px;padding:10px}
 }
 .btn.green{ background:#0f3120; border-color:#1e7448 } /* keep special green */
 
+  /* Buttons */
+.btn.green { 
+  background:#146c43; 
+  border-color:#0f5132; 
+  color:#fff; 
+}
+.light .btn.green {
+  background:#28a745; 
+  border-color:#1e7e34; 
+  color:#fff; 
+}
+.btn.red {
+  background:#dc3545; 
+  border-color:#a71d2a; 
+  color:#fff; 
+}
+.light .btn.red {
+  background:#ff4d5b; 
+  border-color:#cc1f2a; 
+  color:#fff; 
+}
+
 .pill, .chip{
   display:inline-flex; gap:6px; align-items:center;
   border:1px solid var(--border);
@@ -157,6 +179,17 @@ code,.code{
   background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.03));
   border-radius:12px;
 }
+  /* === Checkout patches === */
+/* Start/Stop colors that work in light + dark */
+.btn.green{ background:#0f3120; border-color:#1e7448; color:#e9f7ef; }
+.light .btn.green{ background:#25a86b; border-color:#158a54; color:#fff; }
+
+.btn.red{ background:#b00020; border-color:#8a0019; color:#fff; }
+.light .btn.red{ background:#E6002D; border-color:#b00020; color:#fff; }
+
+/* Belt animation should NOT move until the game starts */
+.belt::before{ animation-play-state: paused; }
+.belt.running::before{ animation-play-state: running; }
 /* Avatar (supports .avatar) */
 .avatar, .customerAvatar{
   width:72px; height:72px; min-width:72px; /* ✅ prevents flex shrink */
@@ -322,88 +355,90 @@ code,.code{
   </section>
 
   <!-- Checkout -->
-  <section id="panelCheckout" class="panel">
-    <div class="card">
-      <h2>Checkout Game — Simulated Register</h2>
+<section id="panelCheckout" class="panel">
+  <div class="card">
+    <h2>Checkout Game — Simulated Register</h2>
 
-      <div class="row">
-        <button class="btn green" id="cgStart">Start</button>
-        <select id="cgPreset">
-          <option value="rookie">Rookie</option>
-          <option value="cashier" selected>Cashier</option>
-          <option value="speed">Speed</option>
-          <option value="expert">Expert</option>
-        </select>
-        <select id="cgTimer">
-          <option value="0">Timer Off</option>
-          <option value="30">30s</option>
-          <option value="20">20s</option>
-          <option value="10">10s</option>
-          <option value="5">5s</option>
-        </select>
+    <div class="row">
+      <button class="btn green" id="cgStart">Start</button>
+      <button class="btn red"   id="cgStop" style="display:none">Stop</button>
+
+      <select id="cgPreset">
+        <option value="rookie">Rookie</option>
+        <option value="cashier" selected>Cashier</option>
+        <option value="speed">Speed</option>
+        <option value="expert">Expert</option>
+      </select>
+      <select id="cgTimer">
+        <option value="0">Timer Off</option>
+        <option value="30">30s</option>
+        <option value="20">20s</option>
+        <option value="10">10s</option>
+        <option value="5">5s</option>
+      </select>
+    </div>
+
+    <label class="chip" style="margin-top:6px">
+      <input type="checkbox" id="showCatHint"> Show Category Hint (next item)
+    </label>
+
+    <!-- AVATAR + BELT + REGISTER -->
+    <div class="checkout-area" style="margin-top:8px">
+      <!-- Avatar -->
+      <div class="avatar" id="customerAvatar">
+        <span class="muted small">Customer</span>
       </div>
 
-      <label class="chip" style="margin-top:6px">
-        <input type="checkbox" id="showCatHint"> Show Category Hint (next item)
-      </label>
-
-      <!-- AVATAR + BELT + REGISTER -->
-      <div class="checkout-area" style="margin-top:8px">
-        <!-- Avatar -->
-        <div class="avatar" id="customerAvatar">
-          <span class="muted small">Customer</span>
-        </div>
-
-        <!-- Conveyor belt -->
-        <div class="belt">
-          <div id="beltItems"></div>
-        </div>
-
-        <!-- Register -->
-        <div class="register">
-          <div class="display">
-            <span class="muted small">PLU:</span>
-            <span id="regDigits">—</span>
-          </div>
-          <div class="kbd" id="regPad">
-            <div class="kkey" data-key="1">1</div>
-            <div class="kkey" data-key="2">2</div>
-            <div class="kkey" data-key="3">3</div>
-            <div class="kkey" data-key="4">4</div>
-            <div class="kkey" data-key="5">5</div>
-            <div class="kkey" data-key="6">6</div>
-            <div class="kkey" data-key="7">7</div>
-            <div class="kkey" data-key="8">8</div>
-            <div class="kkey" data-key="9">9</div>
-            <div class="kkey" data-key="0">0</div>
-            <div class="kkey" data-key="back">⌫</div>
-            <div class="kkey" data-key="clear">Clear</div>
-            <div class="kkey wide" data-key="enter">Enter</div>
-          </div>
-        </div>
+      <!-- Conveyor belt -->
+      <div class="belt" id="belt">
+        <div id="beltItems"></div>
       </div>
 
-      <div class="row" style="margin-top:6px">
-        <div class="chip">Customer <b id="cgCust">0</b>/<b id="cgCustTotal">0</b></div>
-        <div class="chip">Items <b id="cgItem">0</b>/<b id="cgItemTotal">0</b></div>
-        <div class="chip">Streak <b id="cgStreak">0</b></div>
-      </div>
-
-      <div class="row" style="margin:8px 0">
-        <div class="imgbox"><img id="cgImg" style="display:none"><span class="muted small" id="cgNoImg">No picture</span></div>
-        <div style="flex:1">
-          <div><b id="cgName">—</b> <span class="muted">(<span id="cgCat">—</span>)</span></div>
-          <div class="row" style="margin-top:8px">
-            <input id="cgInput" inputmode="numeric" placeholder="Enter PLU…" maxlength="5">
-            <button class="btn" id="cgEnter">Enter</button>
-            <button class="btn" id="cgSkip">Skip</button>
-          </div>
-          <div id="cgFeedback" class="small" style="margin-top:6px"></div>
+      <!-- Register -->
+      <div class="register">
+        <div class="display">
+          <span class="muted small">PLU:</span>
+          <span id="regDigits">—</span>
+        </div>
+        <div class="kbd" id="regPad">
+          <div class="kkey" data-key="1">1</div>
+          <div class="kkey" data-key="2">2</div>
+          <div class="kkey" data-key="3">3</div>
+          <div class="kkey" data-key="4">4</div>
+          <div class="kkey" data-key="5">5</div>
+          <div class="kkey" data-key="6">6</div>
+          <div class="kkey" data-key="7">7</div>
+          <div class="kkey" data-key="8">8</div>
+          <div class="kkey" data-key="9">9</div>
+          <div class="kkey" data-key="0">0</div>
+          <div class="kkey" data-key="back">⌫</div>
+          <div class="kkey" data-key="clear">Clear</div>
+          <div class="kkey wide" data-key="enter">Enter</div>
         </div>
       </div>
     </div>
-  </section>
 
+    <div class="row" style="margin-top:6px">
+      <div class="chip">Customer <b id="cgCust">0</b>/<b id="cgCustTotal">0</b></div>
+      <div class="chip">Items <b id="cgItem">0</b>/<b id="cgItemTotal">0</b></div>
+      <div class="chip">Streak <b id="cgStreak">0</b></div>
+    </div>
+
+    <div class="row" style="margin:8px 0">
+      <div class="imgbox"><img id="cgImg" style="display:none"><span class="muted small" id="cgNoImg">No picture</span></div>
+      <div style="flex:1">
+        <div><b id="cgName">—</b> <span class="muted">(<span id="cgCat">—</span>)</span></div>
+        <div class="row" style="margin-top:8px">
+          <!-- keep, but we disable typing; keypad feeds it -->
+          <input id="cgInput" inputmode="numeric" placeholder="Use keypad to enter…" maxlength="5" readonly>
+          <button class="btn" id="cgEnter">Enter</button>
+          <button class="btn" id="cgSkip">Skip</button>
+        </div>
+        <div id="cgFeedback" class="small" style="margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+</section>
   <!-- Browse (added so the tab works) -->
   <section id="panelBrowse" class="panel">
     <div class="card">
@@ -1005,28 +1040,28 @@ function shiftBelt(){
 // --------------- Checkout Game ----------------
 let CG = null;
 const PRESETS = {
-  rookie:{customers:5, maxItems:3},
+  rookie:{customers:5,  maxItems:3},
   cashier:{customers:8, maxItems:6},
-  speed:{customers:12, maxItems:8},
+  speed:{customers:12,  maxItems:8},
   expert:{customers:15, maxItems:12}
 };
 
-// === Timer helpers (global) ===
+// === Timer helpers ===
 let cgTimerId = null;
 let cgTimerToken = 0;
 
 function clearCgTimer(targetSel){
-  if (cgTimerId !== null){
-    clearInterval(cgTimerId);
-    cgTimerId = null;
-  }
-  if (targetSel){
-    const t = document.querySelector(targetSel);
-    if (t) t.textContent = ""; // clear old display
-  }
+  if (cgTimerId !== null){ clearInterval(cgTimerId); cgTimerId = null; }
+  if (targetSel){ const t = document.querySelector(targetSel); if (t) t.textContent = ""; }
 }
 
-// Bind the hint toggle ONCE (outside start)
+// Belt helpers (pause stripes unless running)
+function beltRunning(on){
+  const belt = document.getElementById('belt');
+  if (!belt) return;
+  belt.classList.toggle('running', !!on);
+}
+
 document.getElementById('showCatHint')?.addEventListener('change', ()=>{
   if (!CG || !CG.queue) return;
   renderBelt(CG.queue.slice(CG.item), document.getElementById('showCatHint').checked);
@@ -1035,37 +1070,67 @@ document.getElementById('showCatHint')?.addEventListener('change', ()=>{
 function startCG(){
   const p = PRESETS[$("#cgPreset").value];
   const timer = parseInt($("#cgTimer").value,10)||0;
+
   CG = { cust:0, custTotal:p.customers, item:0, itemTotal:0, timer, streak:0, queue:[] };
 
-  // reset UI counters
-  $("#cgStreak").textContent = 0;
-  $("#cgCust").textContent = 0;
+  // UI state
+  $("#cgStart").style.display = "none";
+  $("#cgStop").style.display  = "inline-block";
+  $("#cgStreak").textContent  = 0;
+  $("#cgCust").textContent    = 0;
   $("#cgCustTotal").textContent = CG.custTotal;
   $("#cgFeedback").textContent = "";
   $("#cgName").textContent = "—";
-  $("#cgCat").textContent = "—";
-  const belt = document.getElementById('beltItems'); if (belt) belt.innerHTML = '';
-  setRandomAvatar(); // show a face on initial load
+  $("#cgCat").textContent  = "—";
+  $("#cgInput").readOnly   = true;
+  $("#cgInput").value      = "";
+  $("#cgEnter").disabled   = false;
+  $("#cgSkip").disabled    = false;
+
+  document.getElementById('beltItems').innerHTML = '';
+  setRandomAvatar();
+  beltRunning(true);
 
   nextCustomer();
 }
 
+function stopCG(){
+  if (!CG && !document.getElementById('belt')) return;
+
+  clearCgTimer("#cgFeedback");
+  const belt = document.getElementById('beltItems'); if (belt) belt.innerHTML = '';
+  const av   = document.getElementById('customerAvatar'); if (av) av.innerHTML = '<span class="muted small">Customer</span>';
+  $("#cgFeedback").textContent = "⏹ Stopped.";
+  $("#cgName").textContent = "—"; $("#cgCat").textContent = "—";
+  $("#cgItem").textContent = "0"; $("#cgItemTotal").textContent = "0";
+  $("#cgEnter").disabled = true; $("#cgSkip").disabled = true;
+  beltRunning(false);
+
+  CG = null;
+  $("#cgStop").style.display  = "none";
+  $("#cgStart").style.display = "inline-block";
+}
+
 function nextCustomer(){
-  // advance to next customer, or finish
+  if (!CG) return;
+
   CG.cust++;
   if (CG.cust > CG.custTotal){
     $("#cgFeedback").textContent = "🏁 Done!";
-    const belt = document.getElementById('beltItems'); if (belt) belt.innerHTML = '';
-    const av   = document.getElementById('customerAvatar'); if (av) av.innerHTML = '<span class="muted small">Customer</span>';
+    document.getElementById('beltItems').innerHTML = '';
+    const av = document.getElementById('customerAvatar'); if (av) av.innerHTML = '<span class="muted small">Customer</span>';
     clearCgTimer("#cgFeedback");
+    beltRunning(false);
+    $("#cgStop").style.display  = "none";
+    $("#cgStart").style.display = "inline-block";
+    CG = null;
     return;
   }
 
-  // how many items this customer has
   const maxItems = PRESETS[$("#cgPreset").value].maxItems;
   const n = 1 + Math.floor(Math.random() * maxItems);
 
-  // build pool (prefer SRS-due if ON)
+  // Prefer SRS-due if ON
   let pool;
   if ($("#srsMode")?.checked) {
     const due = srsDueItems();
@@ -1074,146 +1139,134 @@ function nextCustomer(){
     pool = [...DATA];
   }
 
-  // queue for this customer
   CG.item = 0;
   CG.itemTotal = n;
   CG.queue = shuffle(pool).slice(0, n);
 
-  // counters
   $("#cgCust").textContent = CG.cust;
   $("#cgCustTotal").textContent = CG.custTotal;
 
-  // visuals
   setRandomAvatar();
-  renderBelt(
-    CG.queue.slice(CG.item),
-    document.getElementById('showCatHint')?.checked
-  );
-
+  renderBelt(CG.queue.slice(CG.item), document.getElementById('showCatHint')?.checked);
   nextItemCG();
 }
 
 function nextItemCG(){
-  // stop any previous item's timer display to avoid flicker
+  if (!CG) return;
+
   clearCgTimer("#cgFeedback");
 
-  if (CG.item >= CG.itemTotal){
-    nextCustomer();
-    return;
-  }
+  if (CG.item >= CG.itemTotal){ nextCustomer(); return; }
 
   const it = CG.queue[CG.item];
 
-  // UI: name/category + image
   $("#cgName").textContent = it.name;
   $("#cgCat").textContent  = it.category;
 
   if (it.image){
-    $("#cgImg").src = it.image;
-    $("#cgImg").style.display = 'block';
-    $("#cgNoImg").style.display = 'none';
+    $("#cgImg").src = it.image; $("#cgImg").style.display = 'block'; $("#cgNoImg").style.display = 'none';
   } else {
-    $("#cgImg").style.display = 'none';
-    $("#cgNoImg").style.display = 'inline';
+    $("#cgImg").style.display = 'none'; $("#cgNoImg").style.display = 'inline';
   }
 
-  // counters + input
   $("#cgItem").textContent      = CG.item + 1;
   $("#cgItemTotal").textContent = CG.itemTotal;
   $("#cgInput").value = "";
   $("#cgFeedback").textContent = "";
 
-  // start a fresh timer for THIS item only
-  if (CG.timer > 0){
-    startTimer(CG.timer, "#cgFeedback");
-  }
+  if (CG.timer > 0){ startTimer(CG.timer, "#cgFeedback"); }
 
-  // refresh belt preview (category hint for first item if toggled)
-  renderBelt(
-    CG.queue.slice(CG.item),
-    document.getElementById('showCatHint')?.checked
-  );
+  renderBelt(CG.queue.slice(CG.item), document.getElementById('showCatHint')?.checked);
 }
+
 function startTimer(sec, targetSel){
   const target = document.querySelector(targetSel);
   if (!target) return;
-
-  // kill any previous timer & clear text first
   clearCgTimer(targetSel);
 
-  // new token for this timer run
   const myToken = ++cgTimerToken;
   const start = Date.now();
 
   const tick = () => {
-    // bail if a newer timer has started
     if (myToken !== cgTimerToken) return;
-
     const left = Math.max(0, sec - Math.floor((Date.now() - start)/1000));
     target.textContent = `⏱ ${left}s`;
-
     if (left <= 0){
       clearCgTimer(targetSel);
       target.textContent = "⏱ 0s — time!";
-      CG.streak = 0;
-      nextWrong(); // your existing handler
+      if (CG){ CG.streak = 0; nextWrong(); }
     }
   };
-
-  tick(); // draw immediately
+  tick();
   cgTimerId = setInterval(tick, 200);
 }
+
 function enterCG(){
+  if (!CG) return;
   const it  = CG.queue[CG.item];
   const val = $("#cgInput").value.trim();
   const ok  = (val === it.code);
 
-  $("#cgFeedback").textContent = ok
-    ? `✅ ${it.code} — +1 streak!`
-    : `❌ ${val||'—'} → ${it.code}`;
+  $("#cgFeedback").textContent = ok ? `✅ ${it.code} — +1 streak!` : `❌ ${val||'—'} → ${it.code}`;
+  srsUpdate(it.code, ok); updateDueBadge();
 
-  // update SRS + due badge
-  srsUpdate(it.code, ok);
-  updateDueBadge();
-
-  // haptics/sound
   if (ok) giveFeedback("success"); else giveFeedback("error");
 
-  // stats
-  STATS.seen++;
-  if (ok){ STATS.correct++; CG.streak++; } else { CG.streak = 0; }
+  STATS.seen++; if (ok){ STATS.correct++; CG.streak++; } else { CG.streak = 0; }
   STATS.bestStreak = Math.max(STATS.bestStreak, CG.streak);
   saveStats(); renderStats();
 
-  // kill this item's timer immediately to prevent overlap with the next one
   clearCgTimer("#cgFeedback");
-
-  // move belt forward and advance
   shiftBelt();
   CG.item++;
   setTimeout(nextItemCG, 300);
 }
-  function skipCG(){
-  // user skipped the item: reset streak and stop this item's timer
+
+function skipCG(){
+  if (!CG) return;
   CG.streak = 0;
   clearCgTimer("#cgFeedback");
-
-  // move the belt forward visually
   shiftBelt();
-
-  // advance to the next item
   nextWrong();
 }
+
 function nextWrong(){
+  if (!CG) return;
   CG.item++;
   setTimeout(nextItemCG, 200);
 }
 
-// Handlers
+// --- Handlers
 $("#cgStart").onclick = startCG;
+$("#cgStop").onclick  = stopCG;
 $("#cgEnter").onclick = enterCG;
-$("#cgSkip").onclick = skipCG;
+$("#cgSkip").onclick  = skipCG;
+// (keep Enter key for accessibility, but input is readonly so only keypad feeds it)
 $("#cgInput").addEventListener('keydown', e=>{ if(e.key==='Enter') enterCG(); });
+
+// --- Hook the register keypad to drive the game input
+$$('#regPad .kkey').forEach(k=>{
+  k.onclick = ()=>{
+    if (!CG){ giveFeedback('light'); return; } // ignore keypad if game not running
+    const key = k.dataset.key;
+    const out = $("#regDigits");
+    if (key === "back"){
+      const cur = out.textContent === "—" ? "" : out.textContent;
+      out.textContent = cur.slice(0,-1) || "—";
+    } else if (key === "clear"){
+      out.textContent = "—";
+    } else if (key === "enter"){
+      const digits = (out.textContent || "").replace(/[^\d]/g,"");
+      $("#cgInput").value = digits;
+      enterCG();
+      out.textContent = "—";
+    } else {
+      const cur = out.textContent === "—" ? "" : out.textContent;
+      const next = (cur + key).slice(0,5);
+      out.textContent = next || "—";
+    }
+  };
+});
 
 // --------------- SRS Badge Sync ----------------
 function updateSrsBadge() {
