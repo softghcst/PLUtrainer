@@ -581,7 +581,6 @@ code,.code{
   <button class="tabbtn" data-tab="panelKeypad">Keypad</button>
   <button class="tabbtn" data-tab="panelStats">Stats</button>
 </nav>
-
 <!-- 🔽🔽🔽 PASTE your full master JSON here (the entire array) and save -->
 <script id="seed" type="application/json">[
   {"name":"Cosmic Crisp Apple","code":"2773","category":"Apple","notes":""},
@@ -1857,6 +1856,57 @@ if (!localStorage.getItem('ONBOARDED')) {
   alert('Tip: Use Browse to ⭐ favorite tricky items, then practice in Quiz or Checkout.');
   localStorage.setItem('ONBOARDED','1');
 }
+</script>
+  <!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+
+  // Your Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgNMpEr79FSuY1XHh-MNeuPTz2q8S42FE",
+    authDomain: "plu-trainer-8e076.firebaseapp.com",
+    projectId: "plu-trainer-8e076",
+    storageBucket: "plu-trainer-8e076.firebasestorage.app",
+    messagingSenderId: "206662075637",
+    appId: "1:206662075637:web:f18d0a071c2ef5a072b1bc",
+    measurementId: "G-DE56L82L51"
+  };
+
+  // Init Firebase
+  const app = initializeApp(firebaseConfig);
+  export const db = getFirestore(app);
+  export const auth = getAuth(app);
+
+  console.log("✅ Firebase initialized");
+
+  // --- Leaderboard helper ---
+  export async function submitLeaderboardIfPB({ bestStreakRun, difficulty }) {
+    try {
+      // For now, use local profile name or fallback
+      const userId = (PROFILE?.name || "anon").replace(/\s+/g,"_").toLowerCase();
+
+      const ref = doc(db, "leaderboard", `${userId}_${difficulty}`);
+      const snap = await getDoc(ref);
+      const prev = snap.exists() ? snap.data().bestStreakRun || 0 : 0;
+
+      if (bestStreakRun > prev) {
+        await setDoc(ref, {
+          bestStreakRun,
+          difficulty,
+          user: PROFILE?.name || "Anonymous",
+          cashier: PROFILE?.cashier || "",
+          updated: Date.now()
+        });
+        return true; // PB updated
+      }
+      return false; // no update
+    } catch(e){
+      console.error("⚠️ Leaderboard submit failed", e);
+      return false;
+    }
+  }
 </script>
 <script>
   if ('serviceWorker' in navigator) {
