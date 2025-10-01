@@ -1303,42 +1303,32 @@ function startTimer(sec, targetSel){
   // Submit leaderboard ONLY if this run beats previous personal best for this difficulty.
 // Returns true if it wrote a new PB, false otherwise.
 async function submitLeaderboardIfPB({ bestStreakRun, difficulty }){
-  try {
-    // No Firestore? Bail quietly.
-    if (typeof db === 'undefined') return false;
-
-    // Identity for the doc: prefer auth uid; fallback to a local "cashier" id
-    const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
-    const uid =
-      (user && user.uid) ||
-      (PROFILE?.cashier ? `local_${PROFILE.cashier}` : null);
-
-    if (!uid) return false; // cannot write without some id
+  try{
+    const user = (typeof auth!=='undefined') ? auth.currentUser : null;
+    const uid  = user?.uid || (PROFILE?.cashier ? `local_${PROFILE.cashier}` : null);
+    if (!uid) return false;
 
     const docRef = db.collection('leaderboard').doc(uid);
+    const snap = await docRef.get();
+    const mine = snap.exists ? snap.data() : {};
 
-    let updated = false;
-    await db.runTransaction(async (tx)=>{
-      const snap = await tx.get(docRef);
-      const data = snap.exists ? snap.data() : {};
-      const best = data.best || {}; // { rookie, cashier, speed, expert }
-      const prev = Number(best[difficulty] || 0);
+    const prevBest = (mine.best && Number(mine.best[difficulty])) || 0;
+    const isPB = Number(bestStreakRun || 0) > Number(prevBest || 0);
+    if (!isPB) return false;
 
-      if (bestStreakRun > prev) {
-        best[difficulty] = bestStreakRun;
-        tx.set(docRef, {
-          name: PROFILE?.name || '',
-          cashier: PROFILE?.cashier || '',
-          best,                                  // merged map
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-        updated = true;
-      }
-    });
+    const nextBest = Object.assign({}, mine.best || {});
+    nextBest[difficulty] = Number(bestStreakRun || 0);
 
-    return updated;
-  } catch (e) {
-    console.warn('submitLeaderboardIfPB error:', e);
+    await docRef.set({
+      name: PROFILE?.name || '',
+      cashier: PROFILE?.cashier || '',
+      best: nextBest,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    return true;
+  }catch(e){
+    console.warn('submitLeaderboardIfPB failed', e);
     return false;
   }
 }
@@ -1439,12 +1429,16 @@ if (CG.cust > CG.custTotal){
     })
     .catch(()=>{ $("#cgFeedback").textContent = "🏁 Done!"; });
 
+  // tidy up UI
   document.getElementById('beltItems').innerHTML = '';
   const av = document.getElementById('customerAvatar');
   if (av) av.innerHTML = '<span class="muted small">Customer</span>';
+  setPreview({name:'—', category:'', image:''});    // ← optional: clear the register preview
+  renderBelt([]);                                   // ← optional: clear belt visuals
 
   clearCgTimer("#cgFeedback");
   beltRunning(false);
+
   $("#cgStart").disabled = false;
   $("#cgStop").disabled  = true;
 
