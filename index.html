@@ -530,26 +530,32 @@ code,.code{
       <div id="browseList" class="list"></div>
     </div>
   </section>
+  <!-- Leaderboard tab -->
+<section id="panelLeaderboard" class="panel">
+  <div class="card">
+    <h2>Leaderboard</h2>
 
-  <!-- Big keypad tab -->
-  <section id="panelKeypad" class="panel">
-    <div class="card">
-      <h2>Big Keypad</h2>
-      <div class="bigpad">
-        <div class="bigkey">1</div><div class="bigkey">2</div><div class="bigkey">3</div>
-        <div class="bigkey">4</div><div class="bigkey">5</div><div class="bigkey">6</div>
-        <div class="bigkey">7</div><div class="bigkey">8</div><div class="bigkey">9</div>
-        <div class="bigkey">0</div>
-        <div class="bigkey big" id="bkEnter">Enter</div>
-        <div class="bigkey big" id="bkClear">Clear</div>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <input id="bkInput" inputmode="numeric" placeholder="Enter PLU…" maxlength="5">
-      </div>
-      <div id="bkFeedback" class="small" style="margin-top:6px"></div>
+    <div class="row" style="margin:6px 0">
+      <label class="chip">Difficulty:
+        <select id="lbDiff">
+          <option value="rookie">Rookie</option>
+          <option value="cashier" selected>Cashier</option>
+          <option value="speed">Speed</option>
+          <option value="expert">Expert</option>
+        </select>
+      </label>
     </div>
-  </section>
 
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>Name</th><th>Cashier</th><th>Best Streak</th></tr>
+      </thead>
+      <tbody id="lbTableBody">
+        <tr><td colspan="4" class="muted small">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
   <!-- Stats tab -->
   <section id="panelStats" class="panel">
     <div class="card">
@@ -578,7 +584,7 @@ code,.code{
   <button class="tabbtn" data-tab="panelQuiz">Quiz</button>
   <button class="tabbtn" data-tab="panelCheckout">Checkout</button>
   <button class="tabbtn" data-tab="panelBrowse">Browse</button>
-  <button class="tabbtn" data-tab="panelKeypad">Keypad</button>
+  <button class="tabbtn" data-tab="panelLeaderboard">Leaderboard</button>
   <button class="tabbtn" data-tab="panelStats">Stats</button>
 </nav>
 <!-- 🔽🔽🔽 PASTE your full master JSON here (the entire array) and save -->
@@ -1391,7 +1397,7 @@ function startCG(){
     expectedDigits,       // NEW: how many trailing digits they must type
     queue:[]
   };
-
+}
   // (rest of your startCG stays the same)
   $("#cgStart").disabled = true;
   $("#cgStop").disabled  = false;
@@ -1725,6 +1731,7 @@ document.getElementById("srsMode")?.addEventListener("change", ()=>{
 updateSrsBadge();
 
 // --------------- Browse / Search + Favorites ----------------
+// Rebuild the list of items (called elsewhere)
 function renderBrowse(){
   const norm = s => s.toLowerCase();
   const q = norm($("#searchBox").value.trim());
@@ -1744,73 +1751,48 @@ function renderBrowse(){
   updateItemCount(results.length);
 
   results.forEach(it => {
-    const row = document.createElement('div'); row.className='rowline';
+    const row = document.createElement('div');
+    row.className = 'rowline';
     row.innerHTML = `
       <div style="display:flex;gap:10px;align-items:center">
-        <span class="star" data-code="${it.code}">${FAV.has(it.code) ? '⭐':'☆'}</span>
+        <span class="star" data-code="${it.code}">${FAV.has(it.code) ? '⭐' : '☆'}</span>
         <div>
           <div><b>${it.name}</b> <span class="muted small">(${it.category})</span></div>
-          <div class="small muted">${it.code}${it.notes? ' — '+it.notes:''}</div>
+          <div class="small muted">${it.code}${it.notes ? ' — ' + it.notes : ''}</div>
         </div>
       </div>
-      <div class="imgbox">${it.image? `<img src="${it.image}">`:`<span class="muted small">No picture</span>`}</div>`;
+      <div class="imgbox">${it.image ? `<img src="${it.image}">` : `<span class="muted small">No picture</span>`}</div>
+    `;
     list.appendChild(row);
   });
 
-  $$('.star').forEach(s => s.onclick = () => {
-    const c = s.dataset.code;
-    if(FAV.has(c)) FAV.delete(c); else FAV.add(c);
-    saveFav(); renderBrowse();
+  // ⭐ wire up stars AFTER rendering
+  $$('.star').forEach(s => {
+    s.onclick = () => {
+      const c = s.dataset.code;
+      if (FAV.has(c)) FAV.delete(c); else FAV.add(c);
+      saveFav();
+      renderBrowse(); // refresh stars/count immediately
+    };
   });
 }
-function buildCatFilter(){
-  const cats = Array.from(new Set(DATA.map(d=>d.category))).sort();
-  $("#catFilter").innerHTML = `<option value="">All Categories</option>` + cats.map(c=>`<option>${c}</option>`).join('');
-}
-$("#searchBox").oninput = renderBrowse;
-$("#catFilter").onchange = renderBrowse;
-$("#favOnly").onchange = renderBrowse;
-buildCatFilter(); renderBrowse(); updateItemCount();
 
-// --------------- Big Keypad ----------------
-function activePanelId(){
-  const btn = document.querySelector('.tabbtn.active');
-  return btn ? btn.dataset.tab : '';
+function buildCatFilter(){
+  const cats = Array.from(new Set(DATA.map(d => d.category))).sort();
+  $("#catFilter").innerHTML =
+    `<option value="">All Categories</option>` +
+    cats.map(c => `<option>${c}</option>`).join('');
 }
-function activeGameInput(){
-  // during Checkout, target the game input; otherwise big keypad input
-  return activePanelId()==='panelCheckout' ? $("#cgInput") : $("#bkInput");
-}
-$$('.bigkey').forEach(k=>{
-  const v = k.textContent.trim();
-  if(/^\d$/.test(v)) k.onclick = ()=>{
-    const target = activeGameInput();
-    target.value += v;
-    giveFeedback("light");
-  };
-});
-document.getElementById('bkEnter').onclick = ()=>{
-  const t = activeGameInput();
-  if (activePanelId()==='panelCheckout') enterCG(); else {
-    const code = t.value.trim();
-    const hit = DATA.find(d=>d.code===code);
-    $("#bkFeedback").textContent = hit ? `✅ ${hit.name} (${hit.category})` : `❌ Not found`;
-    if (hit) giveFeedback("success"); else giveFeedback("error");
-  }
-};
-document.getElementById('bkClear').onclick = ()=>{
-  const t = activeGameInput();
-  t.value = '';
-  if (activePanelId()!=='panelCheckout') $("#bkFeedback").textContent = '';
-  giveFeedback("light");
-};
-$("#bkEnter").onclick = ()=>{
-  const code = $("#bkInput").value.trim();
-  const hit = DATA.find(d=>d.code===code);
-  $("#bkFeedback").textContent = hit ? `✅ ${hit.name} (${hit.category})` : `❌ Not found`;
-  if (hit) giveFeedback("success"); else giveFeedback("error");
-};
-$("#bkClear").onclick = ()=>{ $("#bkInput").value=""; $("#bkFeedback").textContent=""; giveFeedback("light"); };
+
+// search/filter wiring
+$("#searchBox").oninput  = renderBrowse;
+$("#catFilter").onchange = renderBrowse;
+$("#favOnly").onchange   = renderBrowse;
+
+// init
+buildCatFilter();
+renderBrowse();
+updateItemCount();
 
 // --------------- Stats ----------------
 function renderStats(){
@@ -1912,6 +1894,151 @@ if (!localStorage.getItem('ONBOARDED')) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
   }
+</script>
+  <script type="module">
+  // --- Firebase imports ---
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+  import { 
+    getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, 
+    collection, query, where, orderBy, limit, onSnapshot 
+  } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+  // --- Your config (use the one Firebase gave you) ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgNMpEr79FSuY1XHh-MNeuPTz2q8S42FE",
+    authDomain: "plu-trainer-8e076.firebaseapp.com",
+    projectId: "plu-trainer-8e076",
+    storageBucket: "plu-trainer-8e076.firebasestorage.app",
+    messagingSenderId: "206662075637",
+    appId: "1:206662075637:web:f18d0a071c2ef5a072b1bc",
+    measurementId: "G-DE56L82L51"
+  };
+
+  // --- Init ---
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // Sign in anonymously so each device has a UID
+  onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth); });
+  // also try silently (no harm if already signed in)
+  signInAnonymously(auth).catch(()=>{ /* ignore */ });
+
+  // Small helper to pick the Firestore field name by difficulty
+  function fieldFor(diff){
+    switch (diff) {
+      case 'rookie':  return 'best_rookie';
+      case 'speed':   return 'best_speed';
+      case 'expert':  return 'best_expert';
+      default:        return 'best_cashier';
+    }
+  }
+
+  // Escape HTML (avoid bad input in names)
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // ✅ Submit PB if higher than stored (called when a run finishes)
+  window.submitLeaderboardIfPB = async function({ bestStreakRun, difficulty }){
+    try {
+      const user = auth.currentUser;
+      if (!user) return false;
+
+      const uid   = user.uid;
+      const field = fieldFor(difficulty);
+
+      // Pull the local profile for name/cashier if you have it
+      let name = 'Anonymous', cashier = '';
+      try {
+        const p = JSON.parse(localStorage.getItem('PROFILE_V1') || '{}');
+        if (p?.name) name = p.name;
+        if (p?.cashier) cashier = p.cashier;
+      } catch(e){}
+
+      const ref  = doc(db, 'leaderboard', uid);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()){
+        const data = {
+          name, cashier,
+          best_rookie: 0,
+          best_cashier: 0,
+          best_speed: 0,
+          best_expert: 0,
+          updatedAt: serverTimestamp()
+        };
+        data[field] = bestStreakRun;
+        await setDoc(ref, data);
+        return true; // first record is a PB
+      } else {
+        const cur = snap.data()[field] || 0;
+        if (bestStreakRun > cur){
+          await updateDoc(ref, {
+            [field]: bestStreakRun,
+            name, cashier,
+            updatedAt: serverTimestamp()
+          });
+          return true; // updated PB
+        }
+        return false; // not a PB
+      }
+    } catch (e) {
+      console.error('submitLeaderboardIfPB error', e);
+      return false;
+    }
+  };
+
+  // ✅ Live leaderboard listener (auto-updates table)
+  let lbUnsub = null;
+  window.watchLeaderboard = function(diff){
+    // clean up old listener
+    if (lbUnsub) { try { lbUnsub(); } catch(e){} lbUnsub = null; }
+
+    const tbody = document.getElementById('lbTableBody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="muted small">Loading…</td></tr>`;
+
+    const field = fieldFor(diff);
+    const qref  = query(
+      collection(db, 'leaderboard'),
+      where(field, '>', 0),
+      orderBy(field, 'desc'),
+      limit(20)
+    );
+
+    lbUnsub = onSnapshot(qref, (snap) => {
+      const rows = [];
+      let rank = 1;
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        rows.push(
+          `<tr>
+            <td>${rank++}</td>
+            <td>${escapeHtml(d.name || 'Anonymous')}</td>
+            <td>${escapeHtml(d.cashier || '')}</td>
+            <td>${d[field] || 0}</td>
+          </tr>`
+        );
+      });
+      if (tbody) {
+        tbody.innerHTML = rows.length
+          ? rows.join('')
+          : `<tr><td colspan="4" class="muted small">No scores yet.</td></tr>`;
+      }
+    }, (err) => {
+      console.error(err);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="muted small">Error loading leaderboard.</td></tr>`;
+    });
+  };
+
+  // Start the leaderboard watcher when the page loads and whenever difficulty changes
+  window.addEventListener('load', () => {
+    const sel = document.getElementById('lbDiff');
+    if (!sel) return;
+    window.watchLeaderboard(sel.value || 'cashier');
+    sel.addEventListener('change', () => window.watchLeaderboard(sel.value || 'cashier'));
+  });
 </script>
 </body>
 </html>
