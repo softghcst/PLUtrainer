@@ -1420,35 +1420,37 @@ function nextCustomer(){
   if (!CG) return;
 
   CG.cust++;
-if (CG.cust > CG.custTotal){
-  const runBest = CG.bestStreakRun || 0;
-  const diff    = CG.difficulty || $("#cgPreset").value || 'cashier';
 
-  // Fire-and-forget submit; if updated, show a PB message
-  submitLeaderboardIfPB({ bestStreakRun: runBest, difficulty: diff })
-    .then(updated=>{
-      const base = "🏁 Done!";
-      $("#cgFeedback").textContent = updated
-        ? `${base} 🏆 New personal best for ${diff}: ${runBest}`
-        : base;
-    })
-    .catch(()=>{ $("#cgFeedback").textContent = "🏁 Done!"; });
+  // ✅ If run is finished:
+  if (CG.cust > CG.custTotal){
+    const runBest = CG.bestStreakRun || 0;                          // best streak for this session
+    const diff    = CG.difficulty || $("#cgPreset").value || 'cashier';
 
-  // tidy up UI
-  document.getElementById('beltItems').innerHTML = '';
-  const av = document.getElementById('customerAvatar');
-  if (av) av.innerHTML = '<span class="muted small">Customer</span>';
-  setPreview({name:'—', category:'', image:''});    // ← optional: clear the register preview
-  renderBelt([]);                                   // ← optional: clear belt visuals
+    // Fire-and-forget submit; if updated, show a PB message
+    // submitLeaderboardIfPB lives in your <script type="module">; it’s global-visible
+    submitLeaderboardIfPB({ bestStreakRun: runBest, difficulty: diff })
+      .then(updated=>{
+        const base = "🏁 Done!";
+        $("#cgFeedback").textContent = updated
+          ? `${base} 🏆 New personal best for ${diff}: ${runBest}`
+          : base;
+      })
+      .catch(()=>{ $("#cgFeedback").textContent = "🏁 Done!"; });
 
-  clearCgTimer("#cgFeedback");
-  beltRunning(false);
+    // === your existing cleanup (keep this) ===
+    document.getElementById('beltItems').innerHTML = '';
+    const av = document.getElementById('customerAvatar');
+    if (av) av.innerHTML = '<span class="muted small">Customer</span>';
+    clearCgTimer("#cgFeedback");
+    beltRunning(false);
+    $("#cgStart").disabled = false;
+    $("#cgStop").disabled  = true;
 
-  $("#cgStart").disabled = false;
-  $("#cgStop").disabled  = true;
+    CG = null;
+    return;
+  }
 
-  CG = null;
-  return;
+  // ... the rest of nextCustomer() (creating queue, setRandomAvatar, renderBelt, nextItemCG, etc.)
 }
   const maxItems = PRESETS[$("#cgPreset").value].maxItems;
   const n = 1 + Math.floor(Math.random() * maxItems);
@@ -1923,8 +1925,15 @@ if (!localStorage.getItem('ONBOARDED')) {
   // Sign in anonymously so each device has a UID
   onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth); });
   // also try silently (no harm if already signed in)
-  signInAnonymously(auth).catch(()=>{ /* ignore */ });
+  signInAnonymously(auth).catch(console.error);
 
+    // keep track of uid
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log("Signed in as", user.uid);
+    window.currentUser = user; // store globally for leaderboard writes
+  }
+});
   // Small helper to pick the Firestore field name by difficulty
   function fieldFor(diff){
     switch (diff) {
@@ -1989,7 +1998,41 @@ if (!localStorage.getItem('ONBOARDED')) {
       return false;
     }
   };
+  // 🔽 ADD THESE IMPORTS if you don't already have them
+  import {
+    getFirestore, doc, setDoc, getDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
+  // 🔽 Create Firestore instance
+  const db = getFirestore(app);
+
+  // 🔽 Leaderboard helper
+  // Save only if it's a new PB (per difficulty). One doc per user at /leaderboard/{uid}.
+  async function submitLeaderboardIfPB({ bestStreakRun, difficulty }) {
+    const user = window.currentUser;
+    if (!user) return false; // not signed in yet
+
+    const ref = doc(db, "leaderboard", user.uid);
+    const snap = await getDoc(ref);
+    const prev = snap.exists() ? snap.data() : {};
+
+    // previous best in this difficulty
+    const prevBest = prev[difficulty]?.score || 0;
+
+    if (bestStreakRun > prevBest) {
+      const entry = {
+        name: (window.PROFILE?.name || "Anonymous"),
+        userId: user.uid,
+        // store per-difficulty object (keeps others untouched via merge)
+        [difficulty]: { score: bestStreakRun, updatedAt: Date.now() }
+      };
+      await setDoc(ref, entry, { merge: true });
+      return true; // new PB
+    }
+    return false; // no update
+  }
+
+  // ... keep the rest of your module script
   // ✅ Live leaderboard listener (auto-updates table)
   let lbUnsub = null;
   window.watchLeaderboard = function(diff){
