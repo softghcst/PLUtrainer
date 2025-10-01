@@ -480,11 +480,11 @@ code,.code{
       <div class="muted small">(<span id="cgPrevCat">—</span>)</div>
     </div>
   </div>
-
-  <div class="display">
-    <span class="muted small">PLU:</span>
-    <span id="regDigits">—</span>
-  </div>
+    <div class="display">
+      <span class="muted small">PLU:</span>
+      <span id="regMask" class="muted small" style="margin-left:6px"></span>
+      <span id="regDigits">-</span>
+    </div>
 
   <div class="kbd" id="regPad">
     <div class="kkey" data-key="1">1</div>
@@ -811,7 +811,52 @@ const store = {
   save(k,v){ localStorage.setItem(k, JSON.stringify(v)); },
   get(k,f){ try{ return JSON.parse(localStorage.getItem(k)) ?? f } catch{ return f } },
   del(k){ localStorage.removeItem(k); }
-};
+};const PROFILE_KEY = 'PROFILE_V1';
+let PROFILE = store.get(PROFILE_KEY, { name: '', cashier: '' });
+
+function updateWelcomeUI(){
+  $("#welcomeName").textContent = PROFILE?.name || '—';
+  $("#welcomeNum").textContent  = PROFILE?.cashier || '—';
+}
+
+// Show in Stats tab too
+function updateStatsWhoAmI(){
+  const host = document.getElementById('stats');
+  if (!host) return;
+  const who = (PROFILE?.name) ? `${PROFILE.name}${PROFILE.cashier ? ' (#'+PROFILE.cashier+')':''}` : '—';
+  let el = document.getElementById('whoamiLine');
+  if (!el){
+    el = document.createElement('div');
+    el.id = 'whoamiLine';
+    el.className = 'chip';
+    el.style.marginBottom = '8px';
+    host.prepend(el);
+  }
+  el.innerHTML = `User: <b>${who}</b>`;
+}
+
+// Open prompt when user clicks 📝
+document.getElementById("editNameBtn")?.addEventListener("click", async ()=>{
+  let name = prompt("Enter your name:", PROFILE.name || "");
+  if (!name) return;
+  let cashier = prompt("Enter your cashier number:", PROFILE.cashier || "");
+  cashier = cashier.replace(/\D/g,"").slice(0,8);
+
+  PROFILE = { name, cashier };
+  store.save(PROFILE_KEY, PROFILE);
+  updateWelcomeUI();
+  updateStatsWhoAmI();
+
+  // push to Firestore if signed in
+  const user = auth.currentUser;
+  if (user){
+    await db.collection('users').doc(user.uid).set({
+      name: PROFILE.name,
+      cashier: PROFILE.cashier,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  }
+});
   // ---------- User info (welcome + cashier number) ----------
 const USER_INFO_KEY = 'USER_INFO';
 
@@ -1020,6 +1065,28 @@ const days = n=>n*24*60*60*1000;
 function srsGet(code){
   if(!SRS[code]) SRS[code] = { ef:2.5, reps:0, intervalDays:0, dueTs: nowTs() };
   return SRS[code];
+}
+  // === Leaderboard submit helper ===
+async function submitLeaderboard(difficulty, bestStreak) {
+  const user = auth.currentUser;
+  if (!user) return; // must be signed in
+
+  const name    = PROFILE?.name || "Anonymous";
+  const cashier = PROFILE?.cashier || "";
+
+  try {
+    await db.collection("leaderboard").add({
+      name,
+      cashier,
+      difficulty,
+      bestStreak,
+      ts: firebase.firestore.FieldValue.serverTimestamp(),
+      uid: user.uid
+    });
+    console.log("✅ Leaderboard entry saved");
+  } catch (e) {
+    console.error("❌ Failed to submit leaderboard:", e);
+  }
 }
 // SM-2 inspired, simplified
 function srsUpdate(code, correct){
@@ -1233,15 +1300,110 @@ function startTimer(sec, targetSel){
   tick();
   cgTimerId = setInterval(tick, 200);
 }
+  // Submit leaderboard ONLY if this run beats previous personal best for this difficulty.
+// Returns true if it wrote a new PB, false otherwise.
+async function submitLeaderboardIfPB({ bestStreakRun, difficulty }){
+  try {
+    // No Firestore? Bail quietly.
+    if (typeof db === 'undefined') return false;
 
+    // Identity for the doc: prefer auth uid; fallback to a local "cashier" id
+    const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+    const uid =
+      (user && user.uid) ||
+      (PROFILE?.cashier ? `local_${PROFILE.cashier}` : null);
+
+    if (!uid) return false; // cannot write without some id
+
+    const docRef = db.collection('leaderboard').doc(uid);
+
+    let updated = false;
+    await db.runTransaction(async (tx)=>{
+      const snap = await tx.get(docRef);
+      const data = snap.exists ? snap.data() : {};
+      const best = data.best || {}; // { rookie, cashier, speed, expert }
+      const prev = Number(best[difficulty] || 0);
+
+      if (bestStreakRun > prev) {
+        best[difficulty] = bestStreakRun;
+        tx.set(docRef, {
+          name: PROFILE?.name || '',
+          cashier: PROFILE?.cashier || '',
+          best,                                  // merged map
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        updated = true;
+      }
+    });
+
+    return updated;
+  } catch (e) {
+    console.warn('submitLeaderboardIfPB error:', e);
+    return false;
+  }
+}
+  // ---------------- Difficulty & Masking ----------------
+// Map your select values to the scheme you described
+function currentDifficultyKey(){
+  return ($("#cgPreset").value || "cashier"); // rookie | cashier | speed | expert
+}
+
+// How many trailing digits should be hidden for a given code length + difficulty.
+// Special rule: 5-digit organics that end in '9' -> rookie hides 2 (since last is always 9).
+function maskCountFor(codeStr, difficulty){
+  const len = codeStr.length;
+  const organic5 = (len === 5 && codeStr.endsWith('9'));
+
+  // default progression for 4-digit codes: 1 / 2 / 3 / 4
+  // for 5-digit organics: 2 / 3 / 4 / 5 (rookie hides 2)
+  const table = {
+    rookie:  organic5 ? 2 : 1,
+    cashier: organic5 ? 3 : 2,
+    speed:   organic5 ? 4 : 3,
+    expert:  organic5 ? 5 : 4
+  };
+  // Safety clamp
+  return Math.max(1, Math.min(len, table[difficulty] || table.cashier));
+}
+
+// Turn the code into a masked hint string (e.g. "219?", "21??", "2???", "????")
+function buildMaskHint(codeStr, hideCount){
+  const keep = codeStr.slice(0, Math.max(0, codeStr.length - hideCount));
+  const q    = '?'.repeat(hideCount);
+  return (keep + q);
+  // Map dropdown preset -> how many trailing digits are hidden (mask)
+// Rookie=1, Cashier=2, Speed=3, Expert=99 (99 means "full code")
+function presetToMask(preset){
+  switch (preset) {
+    case 'rookie':  return 1;
+    case 'cashier': return 2;
+    case 'speed':   return 3;
+    case 'expert':  return 99; // bigger than any code length → full code required
+    default:        return 1;
+  }
+}
+}
 // === Start / Stop / Flow
 function startCG(){
   const p = PRESETS[$("#cgPreset").value];
   const timer = parseInt($("#cgTimer").value,10)||0;
 
-  CG = { cust:0, custTotal:p.customers, item:0, itemTotal:0, timer, streak:0, queue:[] };
+  // NEW: record diff + mask + reset session best
+  const preset = $("#cgPreset").value;
+  const expectedDigits = presetToMask(preset);
 
-  // UI state
+  CG = {
+    cust:0, custTotal:p.customers,
+    item:0, itemTotal:0,
+    timer,
+    streak:0,
+    bestStreakRun: 0,     // NEW: per-session best
+    difficulty: preset,   // NEW: 'rookie' | 'cashier' | 'speed' | 'expert'
+    expectedDigits,       // NEW: how many trailing digits they must type
+    queue:[]
+  };
+
+  // (rest of your startCG stays the same)
   $("#cgStart").disabled = true;
   $("#cgStop").disabled  = false;
   $("#cgStreak").textContent  = 0;
@@ -1263,17 +1425,32 @@ function nextCustomer(){
   if (!CG) return;
 
   CG.cust++;
-  if (CG.cust > CG.custTotal){
-    $("#cgFeedback").textContent = "🏁 Done!";
-    document.getElementById('beltItems').innerHTML = '';
-    const av = document.getElementById('customerAvatar'); if (av) av.innerHTML = '<span class="muted small">Customer</span>';
-    clearCgTimer("#cgFeedback");
-    beltRunning(false);
-    $("#cgStart").disabled = false;
-    $("#cgStop").disabled  = true;
-    CG = null;
-    return;
-  }
+if (CG.cust > CG.custTotal){
+  const runBest = CG.bestStreakRun || 0;
+  const diff    = CG.difficulty || $("#cgPreset").value || 'cashier';
+
+  // Fire-and-forget submit; if updated, show a PB message
+  submitLeaderboardIfPB({ bestStreakRun: runBest, difficulty: diff })
+    .then(updated=>{
+      const base = "🏁 Done!";
+      $("#cgFeedback").textContent = updated
+        ? `${base} 🏆 New personal best for ${diff}: ${runBest}`
+        : base;
+    })
+    .catch(()=>{ $("#cgFeedback").textContent = "🏁 Done!"; });
+
+  document.getElementById('beltItems').innerHTML = '';
+  const av = document.getElementById('customerAvatar');
+  if (av) av.innerHTML = '<span class="muted small">Customer</span>';
+
+  clearCgTimer("#cgFeedback");
+  beltRunning(false);
+  $("#cgStart").disabled = false;
+  $("#cgStop").disabled  = true;
+
+  CG = null;
+  return;
+}
   const maxItems = PRESETS[$("#cgPreset").value].maxItems;
   const n = 1 + Math.floor(Math.random() * maxItems);
 
@@ -1306,7 +1483,14 @@ function nextItemCG(){
   if (CG.item >= CG.itemTotal){ nextCustomer(); return; }
 
   const it = CG.queue[CG.item];
+// Build and show the masked hint
+const diff = currentDifficultyKey();
+const hide = maskCountFor(it.code, diff);
+const hint = buildMaskHint(it.code, hide);
+$("#regMask").textContent = hint;
 
+// Expect only the missing trailing digits to be entered
+CG.expectedDigits = hide;
   // Show item preview INSIDE register
   setPreview(it);
 
@@ -1321,24 +1505,53 @@ function nextItemCG(){
 
   renderBelt(CG.queue.slice(CG.item), true);
 }
-
 function enterCG(){
   if (!CG) return;
-  const it  = CG.queue[CG.item];
-  // digits come from the on-screen register display
-  const digits = ($("#regDigits").textContent || "").replace(/[^\d]/g,"");
-  const ok  = (digits === it.code);
 
-  $("#cgFeedback").textContent = ok ? `✅ ${it.code} — +1 streak!` : `❌ ${digits||'—'} → ${it.code}`;
-  srsUpdate(it.code, ok); updateDueBadge();
+  const it = CG.queue[CG.item];
 
+  // What the user typed on the register display
+  const typed = ($("#regDigits").textContent || "").replace(/[^\d]/g,"");
+
+  // How many trailing digits are hidden (by difficulty)
+  // e.g. Rookie=1, Cashier=2, Speed=3, Expert=full length
+  const hide = Math.max(1, CG?.expectedDigits || 1);
+
+  // The part we expect them to type is the last `hide` digits
+  const need = it.code.slice(-hide);
+
+  // Correct if typed matches the hidden tail
+  const ok = (typed === need);
+
+  // Feedback (use `typed`, not a non-existent `digits` var)
+  $("#cgFeedback").textContent = ok
+    ? `✅ ${it.code} — +1 streak!`
+    : `❌ ${typed || '—'} → ${it.code}`;
+
+  // SRS + due badge
+  srsUpdate(it.code, ok);
+  updateDueBadge();
+
+  // Haptics/sound
   if (ok) giveFeedback("success"); else giveFeedback("error");
 
+  // Stats + run streaks
   STATS.seen++;
-  if (ok){ STATS.correct++; CG.streak++; } else { CG.streak = 0; }
+  if (ok) {
+    STATS.correct++;
+    CG.streak = (CG.streak || 0) + 1;
+  } else {
+    CG.streak = 0;
+  }
+  // Session-best streak (for this run)
+  CG.bestStreakRun = Math.max(CG.bestStreakRun || 0, CG.streak || 0);
+  // All-time best streak (global)
   STATS.bestStreak = Math.max(STATS.bestStreak, CG.streak);
-  saveStats(); renderStats();
 
+  saveStats();
+  renderStats();
+
+  // Advance belt + item
   clearCgTimer("#cgFeedback");
   shiftBelt();
   CG.item++;
@@ -1367,7 +1580,7 @@ document.getElementById('showCatHint')?.addEventListener('change', ()=>{
 
 $("#cgSkip").onclick  = skipCG;
 
-// Register keypad -> drives the game (writes to #regDigits, uses Enter)
+// Register keypad ...
 document.querySelectorAll('#regPad .kkey').forEach(k => {
   k.addEventListener('click', () => {
     const key = k.dataset.key;
@@ -1384,7 +1597,9 @@ document.querySelectorAll('#regPad .kkey').forEach(k => {
     } else {
       // digit
       const cur = out.textContent === "—" ? "" : out.textContent;
-      out.textContent = (cur + key).slice(0,5) || "—";
+      // ✅ limit to expected trailing digits instead of 5
+      const maxLen = Math.max(1, CG?.expectedDigits || 5);
+      out.textContent = (cur + key).slice(0, maxLen) || "—";
     }
   });
 });
