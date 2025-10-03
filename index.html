@@ -1998,6 +1998,24 @@ onAuthStateChanged(auth, (user) => {
       return false;
     }
   };
+    // Keep leaderboard doc's name/cashier synced even when no new PB happens
+window.syncLeaderboardName = async function(){
+  try{
+    const user = auth.currentUser;
+    if (!user) return;
+    const uid = user.uid;
+
+    const name    = (window.PROFILE && window.PROFILE.name)    ? window.PROFILE.name    : 'Anonymous';
+    const cashier = (window.PROFILE && window.PROFILE.cashier) ? window.PROFILE.cashier : '';
+
+    await setDoc(doc(db, 'leaderboard', uid), {
+      name, cashier,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  }catch(e){
+    console.warn('syncLeaderboardName failed', e);
+  }
+};
   // 🔽 ADD THESE IMPORTS if you don't already have them
   import {
     getFirestore, doc, setDoc, getDoc
