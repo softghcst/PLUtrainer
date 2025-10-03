@@ -364,24 +364,37 @@ code,.code{
 <main>
   <!-- Learn -->
   <section id="panelLearn" class="panel active">
-    <div class="card">
-      <h2>Learn — Guided</h2>
-      <div class="row">
-        <div class="imgbox"><img id="learnImg" style="display:none"><span class="muted small" id="learnNoImg">No picture</span></div>
-        <div style="flex:1">
-          <div><b id="learnName">—</b> <span class="muted">(<span id="learnCat">—</span>)</span></div>
-          <div class="small muted" id="learnNotes"></div>
-          <div class="row" style="margin-top:8px">
-            <button class="btn" id="learnPrev">◀ Prev</button>
-            <button class="btn" id="learnNext">Next ▶</button>
-            <button class="btn" id="learnShow">Show Code</button>
-            <span class="pill code" id="learnCode" style="display:none"></span>
-            <button class="btn" id="learnPic">Add Picture</button>
-          </div>
+  <div class="card">
+    <h2>Learn — Guided</h2>
+
+    <!-- 🔽 Category filter goes here -->
+    <div class="row" style="margin:6px 0">
+      <label class="chip">Category:
+        <select id="learnCatFilter">
+          <option value="">All</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="row">
+      <div class="imgbox">
+        <img id="learnImg" style="display:none">
+        <span class="muted small" id="learnNoImg">No picture</span>
+      </div>
+      <div style="flex:1">
+        <div><b id="learnName">—</b> <span class="muted">(<span id="learnCat">—</span>)</span></div>
+        <div class="small muted" id="learnNotes"></div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn" id="learnPrev">◀ Prev</button>
+          <button class="btn" id="learnNext">Next ▶</button>
+          <button class="btn" id="learnShow">Show Code</button>
+          <span class="pill code" id="learnCode" style="display:none"></span>
+          <button class="btn" id="learnPic">Add Picture</button>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
   <!-- Quiz -->
   <section id="panelQuiz" class="panel">
@@ -1041,27 +1054,164 @@ $$('.tabbtn').forEach(b=>b.onclick=()=>{
   $('#'+b.dataset.tab).classList.add('active');
 });
 
-// --------------- Learn ----------------
-let idx=0;
-function showLearn(){
-  const it = DATA[idx % DATA.length];
-  $("#learnName").textContent = it.name;
-  $("#learnCat").textContent = it.category;
-  $("#learnNotes").textContent = it.notes || '';
-  $("#learnCode").style.display='none';
-  if(it.image){ $("#learnImg").src = it.image; $("#learnImg").style.display='block'; $("#learnNoImg").style.display='none'; }
-  else { $("#learnImg").style.display='none'; $("#learnNoImg").style.display='inline'; }
-}
-$("#learnPrev").onclick = ()=>{ idx=(idx-1+DATA.length)%DATA.length; showLearn(); };
-$("#learnNext").onclick = ()=>{ idx=(idx+1)%DATA.length; showLearn(); };
-$("#learnShow").onclick = ()=>{ $("#learnCode").textContent = DATA[idx].code; $("#learnCode").style.display='inline-block'; };
-$("#learnPic").onclick = ()=>{
-  const url = prompt("Paste image URL for: "+DATA[idx].name);
-  if(!url) return;
-  DATA[idx].image = url; store.save('DATA_BAKED', DATA); showLearn();
-};
-showLearn();
+// --------------- Learn (filtered + shuffled) ----------------
+(function(){
+  // tiny local shuffle so we don't depend on the quiz shuffle
+  function shuffleLocal(a){
+    const b = [...a];
+    for (let i=b.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [b[i], b[j]] = [b[j], b[i]];
+    }
+    return b;
+  }
 
+  // state
+  let learnFilter = "";         // selected category or ""
+  let learnOrder  = [];         // current shuffled pool
+  let learnIndex  = 0;          // pointer in learnOrder
+
+  // nodes we update a lot
+  const imgEl    = document.getElementById('learnImg');
+  const noImg    = document.getElementById('learnNoImg');
+  const nameEl   = document.getElementById('learnName');
+  const catEl    = document.getElementById('learnCat');
+  const notesEl  = document.getElementById('learnNotes');
+  const codeBtn  = document.getElementById('learnShow');
+  const codeTag  = document.getElementById('learnCode');
+  const picBtn   = document.getElementById('learnPic');
+  const prevBtn  = document.getElementById('learnPrev');
+  const nextBtn  = document.getElementById('learnNext');
+  const catSelect= document.getElementById('learnCatFilter');
+
+  // build dropdown options once
+  function buildLearnCatFilter(){
+    if (!catSelect) return;
+    const cats = Array.from(new Set(DATA.map(d=>d.category))).sort();
+    catSelect.innerHTML = `<option value="">All</option>` + cats.map(c=>`<option>${c}</option>`).join('');
+  }
+
+  // (re)build a shuffled order for the current filter
+  function rebuildLearnOrder(){
+    const pool = DATA.filter(it => !learnFilter || it.category === learnFilter);
+    learnOrder = shuffleLocal(pool);
+    learnIndex = 0;
+  }
+
+  // current item helper
+  function curItem(){
+    if (!learnOrder.length) return null;
+    return learnOrder[learnIndex % learnOrder.length];
+  }
+
+  // show / hide the big code pill
+  function hideCode(){
+    if (!codeTag) return;
+    codeTag.style.display = 'none';
+  }
+  function showCode(codeStr){
+    if (!codeTag) return;
+    codeTag.textContent = codeStr;
+    codeTag.style.display = 'inline-block';
+    // make it extra readable
+    codeTag.style.fontSize = '1.6rem';
+    codeTag.style.letterSpacing = '4px';
+    codeTag.style.fontWeight = '800';
+    // tap to copy
+    codeTag.title = "Tap to copy";
+  }
+
+  // main renderer
+  function showLearn(){
+    const it = curItem();
+    if (!it){
+      nameEl.textContent = '—';
+      catEl.textContent  = '—';
+      notesEl.textContent= '';
+      if (imgEl){ imgEl.style.display='none'; }
+      if (noImg){ noImg.style.display='inline'; noImg.textContent='No items'; }
+      hideCode();
+      return;
+    }
+
+    nameEl.textContent = it.name;
+    catEl.textContent  = it.category;
+    notesEl.textContent= it.notes || '';
+
+    // image block
+    if (it.image){
+      imgEl.src = it.image;
+      imgEl.style.display = 'block';
+      if (noImg) noImg.style.display = 'none';
+    } else {
+      imgEl.style.display = 'none';
+      if (noImg){ noImg.style.display = 'inline'; noImg.textContent = 'No picture'; }
+    }
+
+    // hide code by default until user taps "Show Code"
+    hideCode();
+  }
+
+  // wire controls
+  prevBtn?.addEventListener('click', ()=>{
+    if (!learnOrder.length) return;
+    learnIndex = (learnIndex - 1 + learnOrder.length) % learnOrder.length;
+    showLearn();
+  });
+
+  nextBtn?.addEventListener('click', ()=>{
+    if (!learnOrder.length) return;
+    learnIndex = (learnIndex + 1) % learnOrder.length;
+    // when we wrap back to 0, reshuffle so the order changes each pass
+    if (learnIndex === 0) learnOrder = shuffleLocal(learnOrder);
+    showLearn();
+  });
+
+  codeBtn?.addEventListener('click', ()=>{
+    const it = curItem();
+    if (!it) return;
+    // toggle: if visible, hide; if hidden, show
+    if (codeTag.style.display === 'none' || codeTag.style.display === ''){
+      showCode(it.code);
+    } else {
+      hideCode();
+    }
+  });
+
+  // click the code pill to copy
+  codeTag?.addEventListener('click', async ()=>{
+    try {
+      await navigator.clipboard.writeText(codeTag.textContent.trim());
+      codeTag.title = "Copied!";
+      setTimeout(()=>{ codeTag.title = "Tap to copy"; }, 900);
+    } catch(e){}
+  });
+
+  // add picture
+  picBtn?.addEventListener('click', ()=>{
+    const it = curItem();
+    if (!it) return;
+    const url = prompt("Paste image URL for: "+it.name);
+    if (!url) return;
+    it.image = url;
+    // persist back to local baked data
+    const idx = DATA.findIndex(d=>d.code===it.code);
+    if (idx >= 0){ DATA[idx].image = url; store.save('DATA_BAKED', DATA); }
+    showLearn();
+  });
+
+  // category filter change
+  catSelect?.addEventListener('change', ()=>{
+    learnFilter = catSelect.value || "";
+    rebuildLearnOrder();
+    showLearn();
+  });
+
+  // init
+  buildLearnCatFilter();
+  rebuildLearnOrder();
+  showLearn();
+})();
 // --------- Spaced Repetition (SRS) ----------
 const SRS = store.get('SRS', {}); // code -> {ef, reps, intervalDays, dueTs}
 function saveSRS(){ store.save('SRS', SRS); }
