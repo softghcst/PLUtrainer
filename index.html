@@ -320,6 +320,22 @@ code,.code{
 .checkout-area{ position: relative; z-index: 2; }
 /* optional: make any "red" buttons match the brand red */
 .btn.red{ background:var(--accent); border-color:#b00020 }
+  /* === Learn Section Code Styling === */
+#learnCode {
+  font-size: 1.6rem;
+  letter-spacing: 4px;
+  font-weight: 800;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--fg);
+}
+  /* === Register placeholder styling === */
+#regDigits.placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
 </style>
 </head>
 <body>
@@ -493,11 +509,11 @@ code,.code{
       <div class="muted small">(<span id="cgPrevCat">—</span>)</div>
     </div>
   </div>
-    <div class="display">
-      <span class="muted small">PLU:</span>
-      <span id="regMask" class="muted small" style="margin-left:6px"></span>
-      <span id="regDigits">-</span>
-    </div>
+<div class="display">
+  <span class="muted small">PLU:</span>
+  <span id="regMask" class="muted small" style="margin-left:6px"></span>
+  <span id="regDigits" class="placeholder">—</span> <!-- ✅ added class -->
+</div>
 
   <div class="kbd" id="regPad">
     <div class="kkey" data-key="1">1</div>
@@ -852,7 +868,6 @@ function updateStatsWhoAmI(){
   }
   el.innerHTML = `User: <b>${who}</b>`;
 }
-
 // Open prompt when user clicks 📝
 document.getElementById("editNameBtn")?.addEventListener("click", async ()=>{
   let name = prompt("Enter your name:", PROFILE.name || "");
@@ -865,14 +880,12 @@ document.getElementById("editNameBtn")?.addEventListener("click", async ()=>{
   updateWelcomeUI();
   updateStatsWhoAmI();
 
-  // push to Firestore if signed in
-  const user = auth.currentUser;
-  if (user){
-    await db.collection('users').doc(user.uid).set({
-      name: PROFILE.name,
-      cashier: PROFILE.cashier,
-      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+  // ✅ NEW: also sync USER_INFO to match PROFILE
+  setUserInfo(name, cashier);
+
+  // ✅ Keep leaderboard name/cashier in sync
+  if (window.syncLeaderboardName) {
+    try { await window.syncLeaderboardName(); } catch(e){}
   }
 });
   // ---------- User info (welcome + cashier number) ----------
@@ -920,10 +933,6 @@ function updateStatsHeader(){
     t.textContent = "";
   }
 }
-
-// Edit button (lets them change any time)
-document.getElementById("editNameBtn")?.addEventListener("click", ()=>askForUserInfo(false));
-
 // First load: if missing, ask once (slight delay so UI is painted)
 (function initWelcome(){
   updateWelcome();
@@ -1221,28 +1230,6 @@ function srsGet(code){
   if(!SRS[code]) SRS[code] = { ef:2.5, reps:0, intervalDays:0, dueTs: nowTs() };
   return SRS[code];
 }
-  // === Leaderboard submit helper ===
-async function submitLeaderboard(difficulty, bestStreak) {
-  const user = auth.currentUser;
-  if (!user) return; // must be signed in
-
-  const name    = PROFILE?.name || "Anonymous";
-  const cashier = PROFILE?.cashier || "";
-
-  try {
-    await db.collection("leaderboard").add({
-      name,
-      cashier,
-      difficulty,
-      bestStreak,
-      ts: firebase.firestore.FieldValue.serverTimestamp(),
-      uid: user.uid
-    });
-    console.log("✅ Leaderboard entry saved");
-  } catch (e) {
-    console.error("❌ Failed to submit leaderboard:", e);
-  }
-}
 // SM-2 inspired, simplified
 function srsUpdate(code, correct){
   const r = srsGet(code);
@@ -1455,85 +1442,46 @@ function startTimer(sec, targetSel){
   tick();
   cgTimerId = setInterval(tick, 200);
 }
-  // Submit leaderboard ONLY if this run beats previous personal best for this difficulty.
-// Returns true if it wrote a new PB, false otherwise.
-async function submitLeaderboardIfPB({ bestStreakRun, difficulty }){
-  try{
-    const user = (typeof auth!=='undefined') ? auth.currentUser : null;
-    const uid  = user?.uid || (PROFILE?.cashier ? `local_${PROFILE.cashier}` : null);
-    if (!uid) return false;
-
-    const docRef = db.collection('leaderboard').doc(uid);
-    const snap = await docRef.get();
-    const mine = snap.exists ? snap.data() : {};
-
-    const prevBest = (mine.best && Number(mine.best[difficulty])) || 0;
-    const isPB = Number(bestStreakRun || 0) > Number(prevBest || 0);
-    if (!isPB) return false;
-
-    const nextBest = Object.assign({}, mine.best || {});
-    nextBest[difficulty] = Number(bestStreakRun || 0);
-
-    await docRef.set({
-      name: PROFILE?.name || '',
-      cashier: PROFILE?.cashier || '',
-      best: nextBest,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-
-    return true;
-  }catch(e){
-    console.warn('submitLeaderboardIfPB failed', e);
-    return false;
-  }
-}
-  // ---------------- Difficulty & Masking ----------------
-// Map your select values to the scheme you described
+// ---------------- Difficulty & Masking ----------------
 function currentDifficultyKey(){
   return ($("#cgPreset").value || "cashier"); // rookie | cashier | speed | expert
 }
 
 // How many trailing digits should be hidden for a given code length + difficulty.
-// Special rule: 5-digit organics that end in '9' -> rookie hides 2 (since last is always 9).
+// Special rule: 5-digit organics ending in '9' → rookie hides 2.
 function maskCountFor(codeStr, difficulty){
   const len = codeStr.length;
   const organic5 = (len === 5 && codeStr.endsWith('9'));
-
-  // default progression for 4-digit codes: 1 / 2 / 3 / 4
-  // for 5-digit organics: 2 / 3 / 4 / 5 (rookie hides 2)
   const table = {
     rookie:  organic5 ? 2 : 1,
     cashier: organic5 ? 3 : 2,
     speed:   organic5 ? 4 : 3,
     expert:  organic5 ? 5 : 4
   };
-  // Safety clamp
   return Math.max(1, Math.min(len, table[difficulty] || table.cashier));
 }
 
 // Turn the code into a masked hint string (e.g. "219?", "21??", "2???", "????")
 function buildMaskHint(codeStr, hideCount){
   const keep = codeStr.slice(0, Math.max(0, codeStr.length - hideCount));
-  const q    = '?'.repeat(hideCount);
-  return (keep + q);
-  // Map dropdown preset -> how many trailing digits are hidden (mask)
-// Rookie=1, Cashier=2, Speed=3, Expert=99 (99 means "full code")
+  return keep + '?'.repeat(hideCount);
+}
+
+// Map dropdown preset -> how many trailing digits are hidden (mask)
 function presetToMask(preset){
   switch (preset) {
     case 'rookie':  return 1;
     case 'cashier': return 2;
     case 'speed':   return 3;
-    case 'expert':  return 99; // bigger than any code length → full code required
+    case 'expert':  return 99; // bigger than any code length → full code
     default:        return 1;
   }
-}
 }
 // === Start / Stop / Flow
 function startCG(){
   const p = PRESETS[$("#cgPreset").value];
   const timer = parseInt($("#cgTimer").value,10)||0;
 
-  // NEW: record diff + mask + reset session best
   const preset = $("#cgPreset").value;
   const expectedDigits = presetToMask(preset);
 
@@ -1542,13 +1490,13 @@ function startCG(){
     item:0, itemTotal:0,
     timer,
     streak:0,
-    bestStreakRun: 0,     // NEW: per-session best
-    difficulty: preset,   // NEW: 'rookie' | 'cashier' | 'speed' | 'expert'
-    expectedDigits,       // NEW: how many trailing digits they must type
+    bestStreakRun: 0,
+    difficulty: preset,
+    expectedDigits,
     queue:[]
   };
-}
-  // (rest of your startCG stays the same)
+
+  // ✅ these belong inside startCG
   $("#cgStart").disabled = true;
   $("#cgStop").disabled  = false;
   $("#cgStreak").textContent  = 0;
@@ -1571,13 +1519,12 @@ function nextCustomer(){
 
   CG.cust++;
 
-  // ✅ If run is finished:
+  // Finished?
   if (CG.cust > CG.custTotal){
-    const runBest = CG.bestStreakRun || 0;                          // best streak for this session
+    const runBest = CG.bestStreakRun || 0;
     const diff    = CG.difficulty || $("#cgPreset").value || 'cashier';
 
-    // Fire-and-forget submit; if updated, show a PB message
-    // submitLeaderboardIfPB lives in your <script type="module">; it’s global-visible
+    // submit PB to Firestore (module helper exposed on window)
     submitLeaderboardIfPB({ bestStreakRun: runBest, difficulty: diff })
       .then(updated=>{
         const base = "🏁 Done!";
@@ -1587,7 +1534,6 @@ function nextCustomer(){
       })
       .catch(()=>{ $("#cgFeedback").textContent = "🏁 Done!"; });
 
-    // === your existing cleanup (keep this) ===
     document.getElementById('beltItems').innerHTML = '';
     const av = document.getElementById('customerAvatar');
     if (av) av.innerHTML = '<span class="muted small">Customer</span>';
@@ -1600,8 +1546,7 @@ function nextCustomer(){
     return;
   }
 
-  // ... the rest of nextCustomer() (creating queue, setRandomAvatar, renderBelt, nextItemCG, etc.)
-}
+  // ✅ queue setup (was outside the function)
   const maxItems = PRESETS[$("#cgPreset").value].maxItems;
   const n = 1 + Math.floor(Math.random() * maxItems);
 
@@ -1625,7 +1570,6 @@ function nextCustomer(){
   renderBelt(CG.queue.slice(CG.item), true);
   nextItemCG();
 }
-
 function nextItemCG(){
   if (!CG) return;
 
@@ -1739,19 +1683,22 @@ document.querySelectorAll('#regPad .kkey').forEach(k => {
     if (!out) return;
 
     if (key === 'back') {
-      const cur = out.textContent === "—" ? "" : out.textContent;
-      out.textContent = cur.slice(0,-1) || "—";
-    } else if (key === 'clear') {
-      out.textContent = "—";
-    } else if (key === 'enter') {
-      enterCG();
-    } else {
-      // digit
-      const cur = out.textContent === "—" ? "" : out.textContent;
-      // ✅ limit to expected trailing digits instead of 5
-      const maxLen = Math.max(1, CG?.expectedDigits || 5);
-      out.textContent = (cur + key).slice(0, maxLen) || "—";
-    }
+  const cur = out.textContent === "—" ? "" : out.textContent;
+  out.textContent = cur.slice(0,-1) || "—";
+} else if (key === 'clear') {
+  out.textContent = "—";
+} else if (key === 'enter') {
+  enterCG();
+} else {
+  // digit
+  const cur = out.textContent === "—" ? "" : out.textContent;
+  const maxLen = Math.max(1, CG?.expectedDigits || 5);
+  out.textContent = (cur + key).slice(0, maxLen) || "—";
+}
+
+// ✅ NEW: toggle placeholder style
+if (out.textContent === "—") out.classList.add("placeholder");
+else out.classList.remove("placeholder");
   });
 });
 
@@ -1866,13 +1813,19 @@ stopBtn?.addEventListener('click', ()=>{
 });
 // --------------- SRS Badge Sync ----------------
 function updateSrsBadge() {
+  const isOn = !!document.getElementById("srsMode")?.checked;
+
+  // Header badge
   const badge = document.getElementById("srsBadge");
-  if (!badge) return;
-  if (document.getElementById("srsMode").checked) {
-    badge.textContent = "ON"; badge.classList.remove("OFF"); badge.classList.add("ON");
-  } else {
-    badge.textContent = "OFF"; badge.classList.remove("ON"); badge.classList.add("OFF");
+  if (badge) {
+    badge.textContent = isOn ? "ON" : "OFF";
+    badge.classList.toggle("ON",  isOn);
+    badge.classList.toggle("OFF", !isOn);
   }
+
+  // Quiz badge (mirror in Quiz section)
+  const qb = document.getElementById("srsBadgeQuiz");
+  if (qb) qb.textContent = isOn ? "ON" : "OFF";
 }
 document.getElementById("srsMode")?.addEventListener("change", ()=>{
   updateSrsBadge();
@@ -1990,57 +1943,6 @@ if (!localStorage.getItem('ONBOARDED')) {
   alert('Tip: Use Browse to ⭐ favorite tricky items, then practice in Quiz or Checkout.');
   localStorage.setItem('ONBOARDED','1');
 }
-</script>
-  <!-- Firebase SDKs -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-  import { getAuth } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-
-  // Your Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyBgNMpEr79FSuY1XHh-MNeuPTz2q8S42FE",
-    authDomain: "plu-trainer-8e076.firebaseapp.com",
-    projectId: "plu-trainer-8e076",
-    storageBucket: "plu-trainer-8e076.firebasestorage.app",
-    messagingSenderId: "206662075637",
-    appId: "1:206662075637:web:f18d0a071c2ef5a072b1bc",
-    measurementId: "G-DE56L82L51"
-  };
-
-  // Init Firebase
-  const app = initializeApp(firebaseConfig);
-  export const db = getFirestore(app);
-  export const auth = getAuth(app);
-
-  console.log("✅ Firebase initialized");
-
-  // --- Leaderboard helper ---
-  export async function submitLeaderboardIfPB({ bestStreakRun, difficulty }) {
-    try {
-      // For now, use local profile name or fallback
-      const userId = (PROFILE?.name || "anon").replace(/\s+/g,"_").toLowerCase();
-
-      const ref = doc(db, "leaderboard", `${userId}_${difficulty}`);
-      const snap = await getDoc(ref);
-      const prev = snap.exists() ? snap.data().bestStreakRun || 0 : 0;
-
-      if (bestStreakRun > prev) {
-        await setDoc(ref, {
-          bestStreakRun,
-          difficulty,
-          user: PROFILE?.name || "Anonymous",
-          cashier: PROFILE?.cashier || "",
-          updated: Date.now()
-        });
-        return true; // PB updated
-      }
-      return false; // no update
-    } catch(e){
-      console.error("⚠️ Leaderboard submit failed", e);
-      return false;
-    }
-  }
 </script>
 <script>
   if ('serviceWorker' in navigator) {
@@ -2166,40 +2068,6 @@ window.syncLeaderboardName = async function(){
     console.warn('syncLeaderboardName failed', e);
   }
 };
-  // 🔽 ADD THESE IMPORTS if you don't already have them
-  import {
-    getFirestore, doc, setDoc, getDoc
-  } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-
-  // 🔽 Create Firestore instance
-  const db = getFirestore(app);
-
-  // 🔽 Leaderboard helper
-  // Save only if it's a new PB (per difficulty). One doc per user at /leaderboard/{uid}.
-  async function submitLeaderboardIfPB({ bestStreakRun, difficulty }) {
-    const user = window.currentUser;
-    if (!user) return false; // not signed in yet
-
-    const ref = doc(db, "leaderboard", user.uid);
-    const snap = await getDoc(ref);
-    const prev = snap.exists() ? snap.data() : {};
-
-    // previous best in this difficulty
-    const prevBest = prev[difficulty]?.score || 0;
-
-    if (bestStreakRun > prevBest) {
-      const entry = {
-        name: (window.PROFILE?.name || "Anonymous"),
-        userId: user.uid,
-        // store per-difficulty object (keeps others untouched via merge)
-        [difficulty]: { score: bestStreakRun, updatedAt: Date.now() }
-      };
-      await setDoc(ref, entry, { merge: true });
-      return true; // new PB
-    }
-    return false; // no update
-  }
-
   // ... keep the rest of your module script
   // ✅ Live leaderboard listener (auto-updates table)
   let lbUnsub = null;
