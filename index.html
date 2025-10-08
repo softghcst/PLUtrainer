@@ -1503,7 +1503,7 @@ function startCG(){
   $("#cgCust").textContent    = 0;
   $("#cgCustTotal").textContent = CG.custTotal;
   $("#cgFeedback").textContent = "";
-  $("#regDigits").textContent = "—";
+  setRegDigits("");
   $("#cgInput").readOnly   = true;
   $("#cgInput").value      = "";
   $("#cgSkip").disabled    = false;
@@ -1594,8 +1594,7 @@ CG.expectedDigits = hide;
   $("#cgItemTotal").textContent = CG.itemTotal;
   $("#cgInput").value = "";
   $("#cgFeedback").textContent = "";
-  $("#regDigits").textContent = "—";
-
+  setRegDigits("");
   if (CG.timer > 0){ startTimer(CG.timer, "#cgFeedback"); }
 
   renderBelt(CG.queue.slice(CG.item), true);
@@ -1682,26 +1681,29 @@ document.querySelectorAll('#regPad .kkey').forEach(k => {
     const out = document.getElementById('regDigits');
     if (!out) return;
 
-    if (key === 'back') {
-  const cur = out.textContent === "—" ? "" : out.textContent;
-  out.textContent = cur.slice(0,-1) || "—";
-} else if (key === 'clear') {
-  out.textContent = "—";
-} else if (key === 'enter') {
-  enterCG();
-} else {
-  // digit
-  const cur = out.textContent === "—" ? "" : out.textContent;
-  const maxLen = Math.max(1, CG?.expectedDigits || 5);
-  out.textContent = (cur + key).slice(0, maxLen) || "—";
-}
+    if (key === 'enter') { 
+      enterCG(); 
+      return; 
+    }
 
-// ✅ NEW: toggle placeholder style
-if (out.textContent === "—") out.classList.add("placeholder");
-else out.classList.remove("placeholder");
+    // current value (treat em dash as empty)
+    const cur = out.textContent === "—" ? "" : out.textContent;
+
+    if (key === 'back') {
+      setRegDigits(cur.slice(0, -1));  // delete last char
+      return;
+    }
+
+    if (key === 'clear') {
+      setRegDigits("");                // clear everything
+      return;
+    }
+
+    // digit (0–9): append but cap at expected length
+    const maxLen = Math.max(1, CG?.expectedDigits || 5);
+    setRegDigits((cur + key).slice(0, maxLen));
   });
 });
-
 // Keep belt empty / paused until Start
 renderBelt([]);
 beltRunning(false);
@@ -1911,8 +1913,14 @@ function renderStats(){
       <div class="card" style="flex:1; padding:10px"><div class="muted small">Best</div><div style="font-size:1.4rem;font-weight:700">${fmt(STATS.bestStreak)}</div></div>
     </div>`;
 }
-renderStats();
-
+// --- Unified helper to set register digits + placeholder style ---
+function setRegDigits(v){
+  const out = document.getElementById('regDigits');
+  // if v is empty or undefined, show em dash
+  out.textContent = (v && v.length) ? v : "—";
+  // toggle the placeholder style based on the value
+  out.classList.toggle('placeholder', out.textContent === "—");
+}
 // ---------- Export / Share ----------
 function buildBackupPayload(){
   return { when: new Date().toISOString(), version: 1, data: DATA, fav: [...FAV], stats: STATS };
