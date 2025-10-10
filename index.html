@@ -402,6 +402,8 @@ code,.code{
 </head>
 <body>
 <script>
+window.addEventListener('error', e => console.error('🔥 JS crash:', e.message, e.filename, e.lineno));
+console.log('✅ Script started');
   // Apply saved theme ASAP so first paint matches user preference
   (function () {
     try {
@@ -2044,7 +2046,7 @@ if (!localStorage.getItem('ONBOARDED')) {
 </script>
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
+    navigator.serviceWorker.register('sw.js?v=5'); // ⬅️ bump when you change SW
   }
 </script>
   <script type="module">
