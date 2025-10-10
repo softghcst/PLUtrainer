@@ -289,6 +289,60 @@ code,.code{
 .light .register .display{ background:#f7f8fb; border-color:#e1e6f0; }
 .light .kkey{ background:#f4f6fb; border-color:#e1e6f0; }
 
+  /* === Preview belt (upcoming items) === */
+.preview-belt{
+  position: relative;
+  height: 64px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.preview-belt::before{
+  content:"Upcoming";
+  position:absolute; top:4px; left:8px;
+  font-size:.72rem; color:var(--muted);
+}
+.pb-track{
+  display:flex; gap:8px; width:100%;
+  transform: translateX(0);
+  padding-left: 70px; /* room for label */
+}
+.pb-item{
+  flex: 0 0 60px;
+  height: 48px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display:flex; align-items:center; justify-content:center;
+  position: relative;
+  box-shadow:0 1px 4px rgba(0,0,0,.15);
+  font-size: 28px;
+}
+.pb-item .pb-hint{
+  position:absolute; bottom:-16px; left:50%;
+  transform: translateX(-50%);
+  font-size:.68rem; color:var(--muted);
+  white-space: nowrap;
+}
+.pb-item img{
+  max-width:100%; max-height:100%; display:block; border-radius:8px;
+}
+
+/* Small left nudge when the queue advances */
+@keyframes pbNudge{
+  0%   { transform: translateX(0); }
+  60%  { transform: translateX(-24px); }
+  100% { transform: translateX(0); }
+}
+.preview-belt .pb-track.bump{
+  animation: pbNudge .28s ease-out;
+}
 /* H-MART branding */
 .brand{ display:flex; align-items:center; gap:10px; margin:0; font-size:1.1rem; letter-spacing:.2px; }
 .hmart-badge{
@@ -476,7 +530,8 @@ code,.code{
       <div class="avatar" id="customerAvatar">
         <span class="muted small">Customer</span>
       </div>
-
+<!-- Preview belt (upcoming items) -->
+<div class="preview-belt" id="previewBelt" aria-hidden="true"></div>
       <!-- Conveyor belt -->
 <div class="belt" id="belt">
   <div id="beltItems"></div>
@@ -1432,6 +1487,61 @@ function beltRunning(on){
   if (!beltEl) return;
   beltEl.classList.toggle('running', !!on);
 }
+  // Preview-belt: nudge-on-advance flag
+let PB_BUMP_NEXT = false;
+
+// Render the preview belt with next few items.
+// queue = items AFTER the current one (we show up to 4)
+// bump = true to play the small translate animation
+function renderPreviewBelt(queue, bump=false){
+  const host = document.getElementById('previewBelt');
+  if (!host) return;
+  host.innerHTML = '';
+
+  const track = document.createElement('div');
+  track.className = 'pb-track';
+  host.appendChild(track);
+
+  const upcoming = queue.slice(0, 4);
+  if (!upcoming.length){
+    const empty = document.createElement('div');
+    empty.className = 'pb-item';
+    empty.textContent = '—';
+    track.appendChild(empty);
+  } else {
+    upcoming.forEach(it => {
+      const box = document.createElement('div');
+      box.className = 'pb-item';
+
+      if (it.image){
+        const img = document.createElement('img');
+        img.src = it.image;
+        img.alt = it.name;
+        box.appendChild(img);
+      } else {
+        box.textContent = iconFor(it);
+      }
+
+      const hint = document.createElement('div');
+      hint.className = 'pb-hint';
+      hint.textContent = it.category;
+      box.appendChild(hint);
+
+      track.appendChild(box);
+    });
+  }
+
+  // play the small nudge animation when advancing
+  if (bump){
+    // force reflow so the animation restarts reliably
+    // eslint-disable-next-line no-unused-expressions
+    track.offsetHeight;
+    track.classList.add('bump');
+    track.addEventListener('animationend', () => {
+      track.classList.remove('bump');
+    }, { once: true });
+  }
+}
 // === Game state + presets
 let CG = null;
 const PRESETS = {
@@ -1561,9 +1671,16 @@ function nextCustomer(){
       })
       .catch(()=>{ $("#cgFeedback").textContent = "🏁 Done!"; });
 
+    // 🧹 clear all visuals when finished
     document.getElementById('beltItems').innerHTML = '';
+
+    // ✅ CLEAR the preview belt too
+    renderPreviewBelt([]);     // empties upcoming items
+    PB_BUMP_NEXT = false;      // reset nudge flag
+
     const av = document.getElementById('customerAvatar');
     if (av) av.innerHTML = '<span class="muted small">Customer</span>';
+
     clearCgTimer("#cgFeedback");
     beltRunning(false);
     $("#cgStart").disabled = false;
@@ -1595,6 +1712,7 @@ function nextCustomer(){
 
   setRandomAvatar();
   renderBelt(CG.queue.slice(CG.item), true);
+  renderPreviewBelt(CG.queue.slice(CG.item + 1), false);
   nextItemCG();
 }
 function nextItemCG(){
@@ -1625,6 +1743,9 @@ CG.expectedDigits = hide;
   if (CG.timer > 0){ startTimer(CG.timer, "#cgFeedback"); }
 
   renderBelt(CG.queue.slice(CG.item), true);
+  const doBump = PB_BUMP_NEXT; // capture + reset per render
+  PB_BUMP_NEXT = false;
+  renderPreviewBelt(CG.queue.slice(CG.item + 1), doBump);
 }
 function enterCG(){
   if (!CG) return;
@@ -1675,6 +1796,7 @@ function enterCG(){
   // Advance belt + item
   clearCgTimer("#cgFeedback");
   shiftBelt();
+  PB_BUMP_NEXT = true;
   CG.item++;
   setTimeout(nextItemCG, 300);
 }
@@ -1689,6 +1811,7 @@ function skipCG(){
 
 function nextWrong(){
   if (!CG) return;
+  PB_BUMP_NEXT = true;
   CG.item++;
   setTimeout(nextItemCG, 200);
 }
@@ -1735,6 +1858,7 @@ document.querySelectorAll('#regPad .kkey').forEach(k => {
 renderBelt([]);
 beltRunning(false);
 setPreview({name:'—', category:'', image:''});
+document.getElementById('previewBelt')?.innerHTML = '';
   // --- Simple Start / Stop (no animations) ---
 const startBtn = document.getElementById('cgStart');
 const stopBtn  = document.getElementById('cgStop');
@@ -1746,15 +1870,36 @@ startBtn?.addEventListener('click', ()=>{
 });
 
 stopBtn?.addEventListener('click', ()=>{
+  // UI buttons
   stopBtn.disabled  = true;
   startBtn.disabled = false;
 
-  // Soft stop only belt + timer
+  // Kill any in-progress game state
+  CG = null;
+
+  // 🧹 Clear the moving belt
   const belt = document.getElementById('beltItems');
   if (belt) belt.innerHTML = '';
+  beltRunning(false);            // pause belt stripe animation
+
+  // 🧹 Clear the preview belt (if present)
+  const pb = document.getElementById('previewBelt');
+  if (pb) pb.innerHTML = '';
+  // If you added a bump flag earlier, safely reset it:
+  if (typeof PB_BUMP_NEXT !== 'undefined') PB_BUMP_NEXT = false;
+
+  // 🧼 Clear timer + feedback
   clearCgTimer("#cgFeedback");
   document.getElementById('cgFeedback').textContent = "⏹ Stopped.";
-  beltRunning(false);
+
+  // 🔁 Reset the product preview area inside the register
+  setPreview({ name: '—', category: '', image: '' });
+  document.getElementById('regMask').textContent = '';
+  setRegDigits("");
+
+  // (Optional) Reset the avatar box back to placeholder
+  const av = document.getElementById('customerAvatar');
+  if (av) av.innerHTML = '<span class="muted small">Customer</span>';
 });
 // --------------- SRS Badge Sync ----------------
 function updateSrsBadge() {
