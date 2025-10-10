@@ -659,7 +659,11 @@ code,.code{
   <button class="tabbtn" data-tab="panelStats">Stats</button>
 </nav>
 <!-- 🔽🔽🔽 PASTE your full master JSON here (the entire array) and save -->
-<script id="seed" type="application/json">[
+<script 
+  window.onerror = function(msg, src, line, col, err){
+  alert("JS Error: " + msg + "\n" + src + ":" + line);
+};
+  id="seed" type="application/json">[
   {"name":"Cosmic Crisp Apple","code":"2773","category":"Apple","notes":""},
   {"name":"Gala Apple","code":"2781","category":"Apple","notes":""},
   {"name":"Fuji Apple","code":"2782","category":"Apple","notes":""},
