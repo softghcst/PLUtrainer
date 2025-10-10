@@ -1297,6 +1297,10 @@ catSelect?.addEventListener('change', ()=>{
   rebuildLearnOrder();
   showLearn();
 });
+catSelect?.addEventListener('input', ()=>{
+  rebuildLearnOrder();
+  showLearn();
+});
 
   // init
   buildLearnCatFilter();
@@ -1661,16 +1665,19 @@ function nextCustomer(){
     const runBest = CG.bestStreakRun || 0;
     const diff    = CG.difficulty || $("#cgPreset").value || 'cashier';
 
-    // submit PB to Firestore (module helper exposed on window)
-    submitLeaderboardIfPB({ bestStreakRun: runBest, difficulty: diff })
-      .then(updated=>{
-        const base = "🏁 Done!";
-        $("#cgFeedback").textContent = updated
-          ? `${base} 🏆 New personal best for ${diff}: ${runBest}`
-          : base;
-      })
-      .catch(()=>{ $("#cgFeedback").textContent = "🏁 Done!"; });
+// submit PB to Firestore (module helper may not be ready yet)
+const submit = (typeof submitLeaderboardIfPB === 'function')
+  ? submitLeaderboardIfPB({ bestStreakRun: runBest, difficulty: diff })
+  : Promise.resolve(false);
 
+submit.then(updated=>{
+  const base = "🏁 Done!";
+  $("#cgFeedback").textContent = updated
+    ? `${base} 🏆 New personal best for ${diff}: ${runBest}`
+    : base;
+}).catch(()=>{
+  $("#cgFeedback").textContent = "🏁 Done!";
+});
     // 🧹 clear all visuals when finished
     document.getElementById('beltItems').innerHTML = '';
 
@@ -2001,6 +2008,8 @@ function renderStats(){
       <div class="card" style="flex:1; padding:10px"><div class="muted small">Best</div><div style="font-size:1.4rem;font-weight:700">${fmt(STATS.bestStreak)}</div></div>
     </div>`;
 }
+// Paint stats once on load
+renderStats();
 // --- Unified helper to set register digits + placeholder style ---
 function setRegDigits(v){
   const out = document.getElementById('regDigits');
