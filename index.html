@@ -385,11 +385,11 @@ code,.code{
 
     <!-- 🔽 Category filter goes here -->
     <div class="row" style="margin:6px 0">
-      <label class="chip">Category:
-        <select id="learnCatFilter">
-          <option value="">All</option>
-        </select>
-      </label>
+      <label class="chip">Categories:
+       <select id="learnCatFilter" multiple size="6" style="min-width:180px">
+    <option value="">All</option>
+  </select>
+</label>
     </div>
 
     <div class="row">
@@ -401,12 +401,13 @@ code,.code{
         <div><b id="learnName">—</b> <span class="muted">(<span id="learnCat">—</span>)</span></div>
         <div class="small muted" id="learnNotes"></div>
         <div class="row" style="margin-top:8px">
-          <button class="btn" id="learnPrev">◀ Prev</button>
-          <button class="btn" id="learnNext">Next ▶</button>
-          <button class="btn" id="learnShow">Show Code</button>
-          <span class="pill code" id="learnCode" style="display:none"></span>
-          <button class="btn" id="learnPic">Add Picture</button>
-        </div>
+  <button class="btn" id="learnPrev">◀ Prev</button>
+  <button class="btn" id="learnNext">Next ▶</button>
+  <button class="btn" id="learnShow">Show Code</button>
+  <span class="pill code" id="learnCode" style="display:none"></span>
+  <button class="btn" id="learnPic">Add Picture</button>
+  <button class="btn" id="learnProblem">⚠️ Problem</button>
+</div>
       </div>
     </div>
   </div>
@@ -436,29 +437,7 @@ code,.code{
 <section id="panelCheckout" class="panel">
   <div class="card">
     <h2>Checkout Game — Simulated Register</h2>
-
-    <!-- === Animated Scene (background + customer) === -->
-<div class="scene">
-  <!-- background image; replace with your own H-Mart cashwrap photo -->
-  <div class="scene-bg"></div>
-
-  <!-- Customer SVG (simple torso + arm group). We animate #arm and #forearm. -->
-  <svg id="customerSvg" viewBox="0 0 200 200" class="customer-svg" aria-hidden="true">
-    <!-- body -->
-    <circle cx="100" cy="50" r="20" fill="#f0c9a1"/>
-    <rect x="78" y="72" width="44" height="60" rx="10" fill="#3b5bdb"/>
-    <!-- shoulder → upper arm (rotates at shoulder) -->
-    <g id="arm" transform="translate(122,88)">
-      <rect x="0" y="-5" width="42" height="10" rx="5" fill="#f0c9a1"/>
-      <!-- elbow → forearm (rotates at elbow) -->
-      <g id="forearm" transform="translate(42,0)">
-        <rect x="0" y="-5" width="36" height="10" rx="5" fill="#f0c9a1"/>
-        <!-- simple hand -->
-        <circle cx="38" cy="0" r="6" fill="#f0c9a1"/>
-      </g>
-    </g>
-  </svg>
-</div>
+    
 <div class="row">
   <button class="btn green" id="cgStart">Start</button>
   <button class="btn red" id="cgStop" disabled>Stop</button>
@@ -836,7 +815,6 @@ code,.code{
 ]</script>
 <!-- 🔼🔼🔼 End master list embed -->
 <!-- GSAP for smooth animations (put before your main scripts) -->
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script>
 // ---------------- Utilities & State ----------------
 const $ = s=>document.querySelector(s);
@@ -1042,12 +1020,15 @@ function updateItemCount(filteredCount = TOTAL_ITEMS){
   if (c) c.textContent = `(${filteredCount}/${TOTAL_ITEMS})`;
 }
 
-// Favorites & Stats
+// Favorites, Problem items & Stats
 const FAV = new Set(store.get('FAV', []));
 function saveFav(){ store.save('FAV', [...FAV]); }
 const STATS = store.get('STATS', {seen:0,correct:0,streak:0,bestStreak:0});
 function saveStats(){ store.save('STATS', STATS); }
 
+// Problem items (user-flagged)
+const PROBLEM = new Set(store.get('PROBLEM', []));
+function saveProblem(){ store.save('PROBLEM', [...PROBLEM]); }
 // Theme toggle
 $("#themeToggle").onclick = ()=>{
   document.body.classList.toggle('light');
@@ -1076,7 +1057,6 @@ $$('.tabbtn').forEach(b=>b.onclick=()=>{
   }
 
   // state
-  let learnFilter = "";         // selected category or ""
   let learnOrder  = [];         // current shuffled pool
   let learnIndex  = 0;          // pointer in learnOrder
 
@@ -1092,20 +1072,44 @@ $$('.tabbtn').forEach(b=>b.onclick=()=>{
   const prevBtn  = document.getElementById('learnPrev');
   const nextBtn  = document.getElementById('learnNext');
   const catSelect= document.getElementById('learnCatFilter');
+  const problemBtn = document.getElementById('learnProblem');
 
   // build dropdown options once
-  function buildLearnCatFilter(){
-    if (!catSelect) return;
-    const cats = Array.from(new Set(DATA.map(d=>d.category))).sort();
-    catSelect.innerHTML = `<option value="">All</option>` + cats.map(c=>`<option>${c}</option>`).join('');
+function buildLearnCatFilter(){
+  if (!catSelect) return;
+  const cats = Array.from(new Set(DATA.map(d=>d.category))).sort();
+  catSelect.innerHTML =
+    `<option value="">All</option>
+     <option value="__PROBLEM__">Problem Items</option>` +
+    cats.map(c=>`<option>${c}</option>`).join('');
+}
+function selectedCats(){
+  if (!catSelect) return [];
+  const vals = [...catSelect.selectedOptions].map(o=>o.value);
+  // If "All" is the only thing (or nothing) selected, treat as no filter
+  if (!vals.length || (vals.length === 1 && vals[0] === '')) return [];
+  return vals;
+}
+  // (re)build a shuffled order for the current filter
+function rebuildLearnOrder(){
+  const sel = selectedCats(); // [] means no filter (all)
+  let pool;
+
+  if (!sel.length){
+    pool = DATA;
+  } else {
+    const wantsProblem = sel.includes('__PROBLEM__');
+    const catSet = new Set(sel.filter(v=>v && v !== '__PROBLEM__'));
+    pool = DATA.filter(it => {
+      const inCats = catSet.size ? catSet.has(it.category) : false;
+      const inProb = wantsProblem ? PROBLEM.has(it.code) : false;
+      return inCats || inProb;
+    });
   }
 
-  // (re)build a shuffled order for the current filter
-  function rebuildLearnOrder(){
-    const pool = DATA.filter(it => !learnFilter || it.category === learnFilter);
-    learnOrder = shuffleLocal(pool);
-    learnIndex = 0;
-  }
+  learnOrder = shuffleLocal(pool);
+  learnIndex = 0;
+}
 
   // current item helper
   function curItem(){
@@ -1156,7 +1160,13 @@ $$('.tabbtn').forEach(b=>b.onclick=()=>{
       imgEl.style.display = 'none';
       if (noImg){ noImg.style.display = 'inline'; noImg.textContent = 'No picture'; }
     }
-
+// reflect Problem state on the button for the current item
+if (problemBtn) {
+  const flagged = PROBLEM.has(it.code);
+  problemBtn.textContent = flagged ? '✓ Problem' : '⚠ Problem';
+  problemBtn.title = flagged ? 'Click to unmark as problem' : 'Click to mark as problem';
+  problemBtn.classList.toggle('active', flagged);
+}
     // hide code by default until user taps "Show Code"
     hideCode();
   }
@@ -1208,13 +1218,22 @@ $$('.tabbtn').forEach(b=>b.onclick=()=>{
     if (idx >= 0){ DATA[idx].image = url; store.save('DATA_BAKED', DATA); }
     showLearn();
   });
-
+problemBtn?.addEventListener('click', ()=>{
+  const it = curItem();
+  if (!it) return;
+  if (PROBLEM.has(it.code)) {
+    PROBLEM.delete(it.code);
+  } else {
+    PROBLEM.add(it.code);
+  }
+  saveProblem();
+  showLearn(); // refresh button label/state
+});
   // category filter change
-  catSelect?.addEventListener('change', ()=>{
-    learnFilter = catSelect.value || "";
-    rebuildLearnOrder();
-    showLearn();
-  });
+catSelect?.addEventListener('change', ()=>{
+  rebuildLearnOrder();
+  showLearn();
+});
 
   // init
   buildLearnCatFilter();
@@ -1708,110 +1727,26 @@ document.querySelectorAll('#regPad .kkey').forEach(k => {
 renderBelt([]);
 beltRunning(false);
 setPreview({name:'—', category:'', image:''});
-// --- Animation state ---
-let custTl = null;        // GSAP timeline for customer + unloading
-let playing = false;
-
-// Simple emoji pool for visual items (maps to your categories loosely)
-const VISUAL_POOL = ["🍎","🍌","🥑","🍊","🍇","🥕","🥬","🧅","🍠","🌽","🫑","🍍"];
-
-// Create a DOM node that flies from cart to belt (visual only)
-function spawnVisualItem(idx=0){
-  const el = document.createElement('div');
-  el.className = 'spawn-item';
-  el.textContent = VISUAL_POOL[idx % VISUAL_POOL.length];
-  document.getElementById('belt').append?.(el);
-  return el;
-}
-
-// Build the unloading animation timeline
-function buildCustomerTimeline(itemCount=4){
-  const svg   = document.getElementById('customerSvg');
-  const arm   = svg?.querySelector('#arm');
-  const fore  = svg?.querySelector('#forearm');
-
-  // Ensure transform origins (so arm rotates from shoulder, forearm from elbow)
-  gsap.set(arm,  { transformOrigin: "0px 0px" });
-  gsap.set(fore, { transformOrigin: "0px 0px" });
-
-  const tl = gsap.timeline({ paused:true });
-  // Walk in from left
-  tl.to(svg, { x: 160, duration: 1.8, ease: "power2.out" }); // from left:-140 → near belt
-
-  // Unload items one by one
-  for (let i=0;i<itemCount;i++){
-    // arm lift
-    tl.to(arm,  { rotation: -28, duration: .25, ease:"sine.out" }, "+=0.1")
-      .to(fore, { rotation: -30, duration: .25, ease:"sine.out" }, "<");
-
-    // visual item arc to belt
-    tl.add(() => {
-      const spawn = document.createElement('div');
-      spawn.className = 'spawn-item';
-      spawn.textContent = VISUAL_POOL[i % VISUAL_POOL.length];
-      (document.getElementById('beltSpawn')||document.body).appendChild(spawn);
-
-      // arc motion to belt area (tweak target as needed)
-      gsap.fromTo(spawn,
-        { x: 0,   y: 0,   opacity: 0 },
-        { x: -240, y: 42, opacity: 1, duration: .55, ease:"power1.inOut",
-          onComplete(){ spawn.remove(); }
-        }
-      );
-    });
-
-    // arm down
-    tl.to(fore, { rotation: 0, duration: .25, ease:"sine.in" }, "+=0.05")
-      .to(arm,  { rotation: 0, duration: .25, ease:"sine.in"  }, "<");
-  }
-
-  // Idle slight breathing at end (optional)
-  tl.to(svg, { y: "-=2", yoyo:true, repeat:-1, duration: 1.4, ease:"sine.inOut" });
-
-  return tl;
-}
-
-// Hook up Start/Stop
+  // --- Simple Start / Stop (no animations) ---
 const startBtn = document.getElementById('cgStart');
 const stopBtn  = document.getElementById('cgStop');
-const beltNode = document.querySelector('.belt'); // just for quick access
-
-// Ensure belt preview stays empty until Start
-renderBelt([]); // <- clears belt when page loads
 
 startBtn?.addEventListener('click', ()=>{
-  if (playing) return;
-  playing = true;
   startBtn.disabled = true;
   stopBtn.disabled  = false;
-
-  // Start your existing CG game logic
-  startCG(); // calls your existing function
-
-  // Build & run animation (items match current customer count)
-  const items = PRESETS[document.getElementById('cgPreset').value].maxItems;
-  custTl = buildCustomerTimeline(Math.min(6, items));
-  custTl.play();
+  startCG();          // start the normal checkout game
 });
 
 stopBtn?.addEventListener('click', ()=>{
-  if (!playing) return;
-  playing = false;
-  startBtn.disabled = false;
   stopBtn.disabled  = true;
+  startBtn.disabled = false;
 
-  // Stop visuals
-  if (custTl){ custTl.kill(); custTl = null; }
-  const svg = document.getElementById('customerSvg');
-  if (svg) gsap.set(svg, { x: 0, y: 0 }); // reset
-
-  // Clear belt preview & any pending timers in your game
+  // Soft stop only belt + timer
   const belt = document.getElementById('beltItems');
   if (belt) belt.innerHTML = '';
   clearCgTimer("#cgFeedback");
-
-  // Soft-reset some labels
   document.getElementById('cgFeedback').textContent = "⏹ Stopped.";
+  beltRunning(false);
 });
 // --------------- SRS Badge Sync ----------------
 function updateSrsBadge() {
